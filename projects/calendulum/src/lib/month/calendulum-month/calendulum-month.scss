@@ -1,0 +1,139 @@
+:host {
+  /**
+   * calendulum theming surface.
+   * Override any of these custom properties on `calendulum-month` (or any
+   * ancestor) to restyle the component without touching its internals.
+   */
+  --cld-accent: #4c6ef5;
+  --cld-accent-contrast: #ffffff;
+  --cld-bg: #ffffff;
+  --cld-bg-hover: #f1f3f5;
+  --cld-border: #dee2e6;
+  --cld-text: #212529;
+  --cld-text-muted: #868e96;
+  --cld-outside-text: #ced4da;
+  --cld-radius: 8px;
+  --cld-font: inherit;
+
+  display: block;
+  font-family: var(--cld-font);
+  color: var(--cld-text);
+  background: var(--cld-bg);
+  border: 1px solid var(--cld-border);
+  border-radius: var(--cld-radius);
+  padding: 1rem;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.cld-month__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.cld-month__title {
+  flex: 1;
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.cld-month__nav {
+  border: none;
+  background: transparent;
+  color: var(--cld-text-muted);
+  font-size: 1.5rem;
+  line-height: 1;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--cld-radius);
+  cursor: pointer;
+}
+
+.cld-month__nav:hover {
+  background: var(--cld-bg-hover);
+  color: var(--cld-text);
+}
+
+.cld-month__today {
+  border: 1px solid var(--cld-border);
+  background: transparent;
+  color: var(--cld-accent);
+  font-size: 0.8125rem;
+  padding: 0.375rem 0.625rem;
+  border-radius: var(--cld-radius);
+  cursor: pointer;
+}
+
+.cld-month__today:hover {
+  background: var(--cld-bg-hover);
+}
+
+.cld-month__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.cld-month__weekday {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cld-text-muted);
+  padding: 0.375rem 0;
+}
+
+.cld-month__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+}
+
+.cld-month__day,
+.cld-month__cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cld-month__day {
+  border: none;
+  background: transparent;
+  border-radius: var(--cld-radius);
+  font-size: 0.875rem;
+  color: var(--cld-text);
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.cld-month__day:hover {
+  background: var(--cld-bg-hover);
+}
+
+.cld-month__day--outside {
+  color: var(--cld-outside-text);
+}
+
+.cld-month__day--today {
+  box-shadow: inset 0 0 0 1.5px var(--cld-accent);
+}
+
+.cld-month__day--selected {
+  background: var(--cld-accent);
+  color: var(--cld-accent-contrast);
+}
+
+.cld-month__day--selected:hover {
+  background: var(--cld-accent);
+}
+
+.cld-month__cell {
+  color: var(--cld-text-muted);
+}

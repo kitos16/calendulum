@@ -1,0 +1,70 @@
+<section class="cld-month" aria-label="Calendar">
+  <header class="cld-month__header">
+    <button
+      type="button"
+      class="cld-month__nav"
+      (click)="previous()"
+      [attr.aria-label]="'Previous month'"
+    >
+      &lsaquo;
+    </button>
+
+    <h2 class="cld-month__title">{{ title() }}</h2>
+
+    <button
+      type="button"
+      class="cld-month__nav"
+      (click)="next()"
+      [attr.aria-label]="'Next month'"
+    >
+      &rsaquo;
+    </button>
+
+    <button
+      type="button"
+      class="cld-month__today"
+      (click)="goToToday()"
+    >
+      Today
+    </button>
+  </header>
+
+  <div class="cld-month__weekdays" role="row">
+    @for (label of weekdays(); track label) {
+      <span class="cld-month__weekday" role="columnheader">{{ label }}</span>
+    }
+  </div>
+
+  <div class="cld-month__grid" role="grid">
+    @for (cell of days(); track cell.date.getTime()) {
+      @if (dayCell(); as cellTemplate) {
+        <div
+          class="cld-month__cell"
+          [class.cld-month__cell--outside]="!cell.inMonth"
+        >
+          <ng-template
+            [ngTemplateOutlet]="cellTemplate"
+            [ngTemplateOutletContext]="{ $implicit: cell }"
+          />
+        </div>
+      } @else if (cell.inMonth || showOutsideDays()) {
+        <button
+          type="button"
+          class="cld-month__day"
+          [class.cld-month__day--outside]="!cell.inMonth"
+          [class.cld-month__day--today]="isToday(cell.date)"
+          [class.cld-month__day--selected]="isSelected(cell.date)"
+          [attr.aria-selected]="isSelected(cell.date)"
+          [attr.aria-label]="cell.date.toLocaleDateString()"
+          (click)="select(cell.date)"
+        >
+          {{ cell.date.getDate() }}
+        </button>
+      } @else {
+        <span class="cld-month__cell" aria-hidden="true"></span>
+      }
+    }
+  </div>
+
+  <ng-content select="[calendulumFooter]" />
+</section>
