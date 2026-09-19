@@ -47,9 +47,6 @@ export class CalendulumMonth {
   /** Custom day-cell template; receives the `DayCell` as `$implicit`. */
   readonly dayCell = input<TemplateRef<CalendulumDayCellContext> | null>(null);
 
-  /** Emitted whenever the user picks a day. */
-  readonly valueChange = this.value.change;
-
   /** Emitted with the first day of the month whenever the view month changes. */
   readonly monthChange = output<Date>();
 
