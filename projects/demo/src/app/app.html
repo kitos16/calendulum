@@ -82,9 +82,10 @@
         </span>
       </ng-template>
       <p class="demo__value">
-        <code>isDayDisabled</code> con la receta de key-set: un predicado estable sobre un
-        <code>Set</code> de <code>dateKey()</code> (hoy + 2 días). El bloqueo es solo de interfaz —
-        <code>select()</code> sigue siendo incondicional.
+        <code>isDayDisabled</code> como predicado: los fines de semana están deshabilitados.
+        Clic en sábado o domingo no emite <code>dayClick</code> ni selecciona. También podés
+        usar la receta de key-set con un <code>Set</code> de <code>dateKey()</code>; el bloqueo
+        es solo de interfaz — <code>select()</code> sigue siendo incondicional.
       </p>
     </article>
 

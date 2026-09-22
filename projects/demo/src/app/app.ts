@@ -9,16 +9,6 @@ import {
   dateKey,
 } from 'calendulum';
 
-/** Unavailable booking window: today + the two following days. */
-const unavailableKeys = new Set(buildUnavailableKeys());
-
-function buildUnavailableKeys(): string[] {
-  const today = new Date();
-  return [0, 1, 2].map((offset) =>
-    dateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() + offset)),
-  );
-}
-
 @Component({
   selector: 'app-root',
   imports: [CalendulumMonth, DatePipe],
@@ -39,10 +29,14 @@ export class App {
   protected readonly dayStyles = signal<Record<string, DayStyle>>(buildDayStyles());
 
   /**
-   * Key-set recipe: a stable predicate over a `Set` of `dateKey()` strings.
-   * The function reference is stable, so it never re-fires gratuitously.
+   * Weekday predicate: disable every Saturday and Sunday so clicking them
+   * does nothing (no `dayClick`, no selection). Works for any rule you can
+   * express as a `(date: Date) => boolean`.
    */
-  protected readonly isDayDisabled = (d: Date) => unavailableKeys.has(dateKey(d));
+  protected readonly isDayDisabled = (d: Date) => {
+    const day = d.getDay();
+    return day === 0 || day === 6;
+  };
 
   /** Visible-days filter selector: all weekdays, Mon–Fri, or Mon–Sat. */
   protected readonly visibleDays = signal<CalendulumVisibleDays>('all');
