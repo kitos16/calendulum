@@ -1,0 +1,49 @@
+schema: spec-driven
+
+context: |
+  Angular 21 workspace (npm). Library `calendulum` (projects/calendulum, ng-packagr,
+  prefix `lib`) + demo app `projects/demo` (SCSS). TypeScript 5.9.2 strict +
+  Angular strictTemplates. Standalone components, signal-based models, `cld-`
+  class prefixes. Prettier (printWidth 100, singleQuote). No ESLint configured.
+  Vitest 4 + jsdom via `@angular/build:unit-test`. Direct commits to
+  github.com/kitos16/calendulum (no PR flow by user preference).
+
+strict_tdd: true
+
+testing:
+  runner:
+    command: npx ng test --watch=false
+    framework: vitest 4 (via @angular/build:unit-test, jsdom 28)
+  layers:
+    unit: vitest + TestBed colocated *.spec.ts
+    integration: TestBed (no @testing-library/angular)
+    e2e: none
+  coverage: false
+  quality:
+    linter: none
+    type_checker: tsc strict (flows through ng build)
+    formatter: prettier
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Document architecture decisions with rationale
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+  apply:
+    guidelines:
+      - Follow existing patterns: standalone components, signals, `cld-` classes
+      - Keep tests colocated as *.spec.ts
+    tdd: true
+    test_command: npx ng test --watch=false
+  verify:
+    test_command: npx ng test --watch=false
+    build_command: npx ng build calendulum && npx ng build demo
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
