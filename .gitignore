@@ -2,6 +2,7 @@
 
 # Compiled output
 /dist
+/.atl
 /tmp
 /out-tsc
 /bazel-out

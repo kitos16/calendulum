@@ -4,9 +4,7 @@
   "compileOnSave": false,
   "compilerOptions": {
     "paths": {
-      "calendulum": [
-        "./projects/calendulum/src/public-api.ts"
-      ]
+      "calendulum": ["./projects/calendulum/src/public-api.ts"]
     },
     "strict": true,
     "noImplicitOverride": true,
