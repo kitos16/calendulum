@@ -1,8 +1,15 @@
 :host {
   display: block;
   min-height: 100dvh;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    Helvetica, Arial, sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
   background: oklch(96% 0.01 95);
   color: oklch(28% 0.02 95);
 }
@@ -82,4 +89,29 @@
   background: var(--cld-accent, oklch(72% 0.16 95));
   color: var(--cld-accent-contrast, oklch(100% 0 0));
   font-weight: 600;
+}
+
+.demo__value code {
+  font-size: 0.8125rem;
+  background: oklch(96% 0.01 95);
+  border: 1px solid oklch(90% 0.01 95);
+  border-radius: 0.25rem;
+  padding: 0.0625rem 0.25rem;
+}
+
+.slot-marker {
+  font-size: 0.625rem;
+  color: oklch(60% 0.02 95);
+}
+
+.slot-marker--on {
+  color: var(--cld-accent, oklch(72% 0.16 95));
+}
+
+.slot-dot {
+  font-size: 0.5625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cld-accent, oklch(72% 0.16 95));
 }

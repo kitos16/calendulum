@@ -24,6 +24,53 @@
           {{ day.date.getDate() }}
         </span>
       </ng-template>
+      <p class="demo__value">
+        El contexto expone <code>day.isToday</code> y <code>day.isSelected</code>; la celda
+        personalizada también emite <code>dayClick</code> (clic, Enter y Espacio).
+      </p>
+    </article>
+
+    <article class="demo__card">
+      <h2 class="demo__card-title">Clic con coordenadas</h2>
+      <calendulum-month (dayClick)="onDayClick($event)" [(value)]="selected" />
+      <p class="demo__value" role="status">
+        @if (lastClick()) {
+          Último clic: {{ lastClick()!.date | date: 'fullDate' }} en ({{ lastClick()!.x }},
+          {{ lastClick()!.y }})
+        } @else {
+          Haz clic en un día para ver las coordenadas (viewport).
+        }
+      </p>
+    </article>
+
+    <article class="demo__card">
+      <h2 class="demo__card-title">Estilos por día</h2>
+      <calendulum-month [dayStyle]="dayStyles()" [(value)]="selected" />
+      <p class="demo__value">
+        <code>dayStyle</code> keyed por <code>dateKey()</code>: hoy solo con borde (la clase de
+        estado gana en fondo/color); mañana con fondo personalizado.
+      </p>
+    </article>
+
+    <article class="demo__card">
+      <h2 class="demo__card-title">Contenido arriba y abajo</h2>
+      <calendulum-month
+        [dayCellTop]="dayCellTop"
+        [dayCellBottom]="dayCellBottom"
+        [(value)]="selected"
+      />
+      <ng-template #dayCellTop let-day>
+        <span class="slot-marker" [class.slot-marker--on]="day.date.getDate() === 15">★</span>
+      </ng-template>
+      <ng-template #dayCellBottom let-day>
+        @if (day.isToday) {
+          <span class="slot-dot">hoy</span>
+        }
+      </ng-template>
+      <p class="demo__value">
+        Slots superpuestos sobre el número (sin moverlo): la estrella marca el día 15, el texto
+        «hoy» usa <code>day.isToday</code> real.
+      </p>
     </article>
   </section>
 </main>

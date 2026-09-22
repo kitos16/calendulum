@@ -43,6 +43,19 @@ export function isSameMonth(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
 }
 
+/**
+ * Formats `date` as a local `YYYY-MM-DD` key.
+ *
+ * Uses local calendar getters with zero-padded month/day — never
+ * `toISOString()` or any UTC-based conversion, so the key always names
+ * the day the user sees in their own timezone.
+ */
+export function dateKey(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
 /** Returns true when `date` is today in the local calendar. */
 export function isToday(date: Date): boolean {
   return isSameDay(date, new Date());

@@ -1,4 +1,13 @@
-import { Component, TemplateRef, computed, inject, input, model, output, signal } from '@angular/core';
+import {
+  Component,
+  TemplateRef,
+  computed,
+  inject,
+  input,
+  model,
+  output,
+  signal,
+} from '@angular/core';
 import { LOCALE_ID } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 
@@ -6,6 +15,7 @@ import {
   DayCell,
   addMonths,
   buildMonthGrid,
+  dateKey,
   isSameDay,
   isToday,
   monthTitle,
@@ -13,9 +23,71 @@ import {
   weekdayLabels,
 } from '../date-utils';
 
-/** Context passed to a custom `dayCell` template. */
+/** Per-day style entry keyed by a local ISO date string (see `dayStyle`). */
+export interface DayStyle {
+  border?: string;
+  color?: string;
+  background?: string;
+  class?: string | string[];
+}
+
+/** Payload of the `dayClick` output: the clicked date + viewport coordinates. */
+export interface CalendulumDayClickEvent {
+  date: Date;
+  x: number;
+  y: number;
+}
+
+/** Flat implicit context for day templates: `let-day` exposes these fields. */
 export interface CalendulumDayCellContext {
-  $implicit: DayCell;
+  date: Date;
+  inMonth: boolean;
+  isToday: boolean;
+  isSelected: boolean;
+}
+
+/**
+ * Maps a `DayStyle` entry to the `--cld-day-*` custom properties for one
+ * cell. The `class` option is intentionally excluded — it belongs to the
+ * cell's class list, not its inline styles.
+ */
+export function resolveDayStyle(
+  style: Record<string, DayStyle>,
+  key: string,
+): Record<string, string> {
+  const entry = style[key];
+  if (!entry) {
+    return {};
+  }
+  const props: Record<string, string> = {};
+  if (entry.border != null) props['--cld-day-border'] = entry.border;
+  if (entry.color != null) props['--cld-day-color'] = entry.color;
+  if (entry.background != null) props['--cld-day-bg'] = entry.background;
+  return props;
+}
+
+/**
+ * Builds the class list for one day cell: component state classes first,
+ * then the entry's consumer class. Consumer classes never replace state
+ * classes — they are always appended.
+ */
+export function resolveCellClasses(
+  cell: DayCell,
+  today: boolean,
+  selected: boolean,
+  style: DayStyle | undefined,
+): string[] {
+  const classes: string[] = [];
+  if (!cell.inMonth) classes.push('cld-month__day--outside');
+  if (today) classes.push('cld-month__day--today');
+  if (selected) classes.push('cld-month__day--selected');
+  const extra = style?.class;
+  if (typeof extra === 'string') {
+    if (extra) classes.push(extra);
+  } else if (extra) {
+    classes.push(...extra);
+  }
+  return classes;
 }
 
 /**
@@ -44,11 +116,23 @@ export class CalendulumMonth {
   /** Hide leading/trailing cells that belong to neighbor months. */
   readonly showOutsideDays = input(true);
 
-  /** Custom day-cell template; receives the `DayCell` as `$implicit`. */
-  readonly dayCell = input<TemplateRef<CalendulumDayCellContext> | null>(null);
+  /** Custom day-cell template; receives `CalendulumDayCellContext` as `$implicit`. */
+  readonly dayCell = input<TemplateRef<{ $implicit: CalendulumDayCellContext }> | null>(null);
+
+  /** Template rendered above the day number; same context as `dayCell`. */
+  readonly dayCellTop = input<TemplateRef<{ $implicit: CalendulumDayCellContext }> | null>(null);
+
+  /** Template rendered below the day number; same context as `dayCell`. */
+  readonly dayCellBottom = input<TemplateRef<{ $implicit: CalendulumDayCellContext }> | null>(null);
+
+  /** Per-day styles keyed by local ISO date string (see `dateKey`). */
+  readonly dayStyle = input<Record<string, DayStyle>>({});
 
   /** Emitted with the first day of the month whenever the view month changes. */
   readonly monthChange = output<Date>();
+
+  /** Emitted when a day cell is activated, carrying viewport coordinates. */
+  readonly dayClick = output<CalendulumDayClickEvent>();
 
   /** The month currently displayed (first day of the month). */
   readonly view = signal<Date>(startOfMonth(this.value() ?? new Date()));
@@ -77,6 +161,31 @@ export class CalendulumMonth {
     return isToday(date);
   }
 
+  /** Builds the flat implicit context (`let-day`) for one grid cell. */
+  cellContext(cell: DayCell): CalendulumDayCellContext {
+    return {
+      date: cell.date,
+      inMonth: cell.inMonth,
+      isToday: this.isToday(cell.date),
+      isSelected: this.isSelected(cell.date),
+    };
+  }
+
+  /** Per-cell class list: state classes merged with the entry's `class`. */
+  cellClasses(cell: DayCell): string[] {
+    return resolveCellClasses(
+      cell,
+      this.isToday(cell.date),
+      this.isSelected(cell.date),
+      this.dayStyle()[dateKey(cell.date)],
+    );
+  }
+
+  /** Per-cell `--cld-day-*` inline custom properties from `dayStyle`. */
+  cellStyle(cell: DayCell): Record<string, string> {
+    return resolveDayStyle(this.dayStyle(), dateKey(cell.date));
+  }
+
   /** Moves the view one month back. */
   previous(): void {
     this.setView(addMonths(this.view(), -1));
@@ -97,6 +206,25 @@ export class CalendulumMonth {
   /** Selects a day and emits `valueChange`. */
   select(date: Date): void {
     this.value.set(date);
+  }
+
+  /**
+   * Emits `dayClick` with the event's viewport coordinates, then selects
+   * the day — `dayClick` is additive to the existing `select()` behavior.
+   */
+  onDayClick(date: Date, event: MouseEvent): void {
+    this.dayClick.emit({ date, x: event.clientX, y: event.clientY });
+    this.select(date);
+  }
+
+  /**
+   * Keyboard activation for custom day cells (Enter/Space). A
+   * `KeyboardEvent` carries no viewport coordinates, so the payload uses
+   * the documented `{ x: 0, y: 0 }` convention and selection still applies.
+   */
+  onDayKeydown(date: Date): void {
+    this.dayClick.emit({ date, x: 0, y: 0 });
+    this.select(date);
   }
 
   private setView(next: Date): void {

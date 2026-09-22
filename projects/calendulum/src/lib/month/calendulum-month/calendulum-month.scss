@@ -104,13 +104,35 @@
 }
 
 .cld-month__day {
-  border: none;
-  background: transparent;
+  border: var(--cld-day-border, none);
+  background: var(--cld-day-bg, transparent);
   border-radius: var(--cld-radius);
   font-size: 0.875rem;
-  color: var(--cld-text);
+  color: var(--cld-day-color, var(--cld-text));
   cursor: pointer;
-  transition: background-color 0.12s ease, color 0.12s ease;
+  position: relative;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.cld-month__day-top,
+.cld-month__day-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.625rem;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.cld-month__day-top {
+  top: 0.125rem;
+}
+
+.cld-month__day-bottom {
+  bottom: 0.125rem;
 }
 
 .cld-month__day:hover {
