@@ -1,7 +1,23 @@
 import { Component, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 
-import { CalendulumDayClickEvent, CalendulumMonth, DayStyle, dateKey } from 'calendulum';
+import {
+  CalendulumDayClickEvent,
+  CalendulumMonth,
+  CalendulumVisibleDays,
+  DayStyle,
+  dateKey,
+} from 'calendulum';
+
+/** Unavailable booking window: today + the two following days. */
+const unavailableKeys = new Set(buildUnavailableKeys());
+
+function buildUnavailableKeys(): string[] {
+  const today = new Date();
+  return [0, 1, 2].map((offset) =>
+    dateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() + offset)),
+  );
+}
 
 @Component({
   selector: 'app-root',
@@ -21,6 +37,15 @@ export class App {
    * tomorrow shows a custom background to prove per-cell styling.
    */
   protected readonly dayStyles = signal<Record<string, DayStyle>>(buildDayStyles());
+
+  /**
+   * Key-set recipe: a stable predicate over a `Set` of `dateKey()` strings.
+   * The function reference is stable, so it never re-fires gratuitously.
+   */
+  protected readonly isDayDisabled = (d: Date) => unavailableKeys.has(dateKey(d));
+
+  /** Visible-days filter selector: all weekdays, Mon–Fri, or Mon–Sat. */
+  protected readonly visibleDays = signal<CalendulumVisibleDays>('all');
 
   protected onDayClick(event: CalendulumDayClickEvent): void {
     this.lastClick.set(event);

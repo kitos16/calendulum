@@ -1,7 +1,17 @@
 import { Component, ViewChild, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { DayCell, dateKey, isSameDay, monthTitle, startOfMonth } from '../date-utils';
+import {
+  CalendulumVisibleDays,
+  DayCell,
+  buildMonthGrid,
+  dateKey,
+  isSameDay,
+  monthTitle,
+  resolveVisibleWeekdays,
+  startOfMonth,
+  weekdayLabels,
+} from '../date-utils';
 import {
   CalendulumDayClickEvent,
   CalendulumMonth,
@@ -292,6 +302,287 @@ describe('CalendulumMonth', () => {
       expect(untouched.classList.contains('hl')).toBe(false);
     });
   });
+
+  describe('disabled days', () => {
+    function dayInView(day: number): Date {
+      const view = component.view();
+      return new Date(view.getFullYear(), view.getMonth(), day);
+    }
+
+    function dayButton(day: number): HTMLButtonElement {
+      const buttons = fixture.nativeElement.querySelectorAll(
+        'button.cld-month__day',
+      ) as NodeListOf<HTMLButtonElement>;
+      const match = Array.from(buttons).find((b) => Number(b.textContent!.trim()) === day);
+      expect(match).toBeDefined();
+      return match!;
+    }
+
+    it('keeps every cell enabled when the predicate is unset', () => {
+      expect(fixture.nativeElement.querySelectorAll('button.cld-month__day--disabled').length).toBe(
+        0,
+      );
+    });
+
+    it('resolves the disabled state only for dates the predicate rejects', () => {
+      fixture.componentRef.setInput('isDayDisabled', (d: Date) => d.getDate() === 15);
+      fixture.detectChanges();
+
+      const disabledButtons = fixture.nativeElement.querySelectorAll(
+        'button.cld-month__day--disabled',
+      );
+      expect(disabledButtons.length).toBe(1);
+      expect(Number(disabledButtons[0].textContent!.trim())).toBe(15);
+      expect(dayButton(16).classList.contains('cld-month__day--disabled')).toBe(false);
+    });
+
+    it('blocks dayClick and selection on the disabled day', () => {
+      fixture.componentRef.setInput('isDayDisabled', (d: Date) => d.getDate() === 15);
+      fixture.detectChanges();
+
+      const emitted: CalendulumDayClickEvent[] = [];
+      component.dayClick.subscribe((e) => emitted.push(e));
+
+      dayButton(15).click();
+      fixture.detectChanges();
+
+      expect(emitted.length).toBe(0);
+      expect(component.value()).toBeNull();
+    });
+
+    it('still emits and selects on an enabled day next to a disabled one', () => {
+      fixture.componentRef.setInput('isDayDisabled', (d: Date) => d.getDate() === 15);
+      fixture.detectChanges();
+
+      const emitted: CalendulumDayClickEvent[] = [];
+      component.dayClick.subscribe((e) => emitted.push(e));
+
+      dayButton(16).click();
+      fixture.detectChanges();
+
+      expect(emitted.length).toBe(1);
+      expect(isSameDay(component.value()!, dayInView(16))).toBe(true);
+    });
+
+    it('select() sets value on a disabled date without consulting the predicate', () => {
+      fixture.componentRef.setInput('isDayDisabled', (d: Date) => d.getDate() === 15);
+      fixture.detectChanges();
+
+      component.select(dayInView(15));
+      fixture.detectChanges();
+
+      expect(isSameDay(component.value()!, dayInView(15))).toBe(true);
+    });
+
+    it('goToToday still selects today when today is disabled', () => {
+      fixture.componentRef.setInput('isDayDisabled', (d: Date) => isSameDay(d, new Date()));
+      fixture.detectChanges();
+
+      component.goToToday();
+      fixture.detectChanges();
+
+      expect(isSameDay(component.value()!, new Date())).toBe(true);
+    });
+
+    it('keeps the today visuals on a disabled today cell', () => {
+      fixture.componentRef.setInput('isDayDisabled', (d: Date) => isSameDay(d, new Date()));
+      fixture.detectChanges();
+
+      const today = fixture.nativeElement.querySelector(
+        'button.cld-month__day--today',
+      ) as HTMLButtonElement | null;
+      expect(today).not.toBeNull();
+      expect(today!.classList.contains('cld-month__day--disabled')).toBe(true);
+    });
+
+    it('marks only the disabled button aria-disabled, without native disabled', () => {
+      fixture.componentRef.setInput('isDayDisabled', (d: Date) => d.getDate() === 15);
+      fixture.detectChanges();
+
+      const disabled = dayButton(15);
+      expect(disabled.getAttribute('aria-disabled')).toBe('true');
+      expect(disabled.hasAttribute('disabled')).toBe(false);
+
+      const enabled = dayButton(16);
+      expect(enabled.getAttribute('aria-disabled')).toBeNull();
+      expect(enabled.hasAttribute('disabled')).toBe(false);
+    });
+  });
+
+  describe('visible days', () => {
+    /** Oracle: the filtered grid dates the component SHOULD render. */
+    function expectedDates(): Date[] {
+      const grid = buildMonthGrid(component.view(), component.firstDayOfWeek());
+      const visible = resolveVisibleWeekdays(component.visibleDays());
+      return grid.filter((c) => visible.has(c.date.getDay())).map((c) => c.date);
+    }
+
+    /** Oracle: the header labels the component SHOULD render, in order. */
+    function expectedHeaders(): string[] {
+      const labels = weekdayLabels('en-US', component.firstDayOfWeek());
+      const visible = resolveVisibleWeekdays(component.visibleDays());
+      return labels.filter((_, i) => visible.has((i + component.firstDayOfWeek()) % 7));
+    }
+
+    function renderedButtons(): HTMLButtonElement[] {
+      return Array.from(
+        fixture.nativeElement.querySelectorAll(
+          'button.cld-month__day',
+        ) as NodeListOf<HTMLButtonElement>,
+      );
+    }
+
+    function renderedHeaders(): HTMLElement[] {
+      return Array.from(
+        fixture.nativeElement.querySelectorAll('.cld-month__weekday') as NodeListOf<HTMLElement>,
+      );
+    }
+
+    /** Asserts the component matches the oracle, then returns the weekday set. */
+    function assertGridMatchesOracle(): number[] {
+      const buttons = renderedButtons();
+      const expected = expectedDates();
+      expect(buttons.length).toBe(expected.length);
+      buttons.forEach((button, i) => {
+        expect(Number(button.textContent!.trim())).toBe(expected[i].getDate());
+      });
+      return expected.map((d) => d.getDay());
+    }
+
+    it('renders 30 Mon–Fri cells for mondayToFriday', () => {
+      fixture.componentRef.setInput('visibleDays', 'mondayToFriday');
+      fixture.detectChanges();
+
+      const weekdays = assertGridMatchesOracle();
+      expect(weekdays.length).toBe(30);
+      expect(weekdays.every((w) => w >= 1 && w <= 5)).toBe(true);
+      expect(weekdays.filter((w) => w === 1).length).toBe(6);
+    });
+
+    it('renders 36 cells for mondayToSaturday', () => {
+      fixture.componentRef.setInput('visibleDays', 'mondayToSaturday');
+      fixture.detectChanges();
+
+      expect(assertGridMatchesOracle().length).toBe(36);
+    });
+
+    it('renders 42 cells for the all default', () => {
+      const weekdays = assertGridMatchesOracle();
+      expect(weekdays.length).toBe(42);
+    });
+
+    it('filters headers to the same set with matching order', () => {
+      fixture.componentRef.setInput('visibleDays', 'mondayToFriday');
+      fixture.detectChanges();
+
+      const headers = renderedHeaders();
+      const expected = expectedHeaders();
+      expect(headers.length).toBe(5);
+      headers.forEach((header, i) => expect(header.textContent).toContain(expected[i]));
+    });
+
+    it('renders weekends only for [6, 0] and [0, 6] alike', () => {
+      fixture.componentRef.setInput('visibleDays', [6, 0]);
+      fixture.detectChanges();
+      const ascending = assertGridMatchesOracle();
+      expect(ascending.length).toBe(12);
+      expect(ascending.every((w) => w === 0 || w === 6)).toBe(true);
+
+      fixture.componentRef.setInput('visibleDays', [0, 6]);
+      fixture.detectChanges();
+      const reversed = assertGridMatchesOracle();
+      expect(reversed.length).toBe(12);
+      expect(reversed.every((w) => w === 0 || w === 6)).toBe(true);
+    });
+
+    it('cleans out-of-range and duplicate entries down to one column', () => {
+      fixture.componentRef.setInput('visibleDays', [
+        1, 1, 9, -2,
+      ] as unknown as CalendulumVisibleDays);
+      fixture.detectChanges();
+
+      expect(assertGridMatchesOracle().length).toBe(6);
+      expect(renderedHeaders().length).toBe(1);
+    });
+
+    it('falls back to all for an empty array', () => {
+      fixture.componentRef.setInput('visibleDays', []);
+      fixture.detectChanges();
+
+      expect(assertGridMatchesOracle().length).toBe(42);
+      expect(renderedHeaders().length).toBe(7);
+    });
+
+    it('firstDayOfWeek=0 with mondayToSaturday omits Sunday', () => {
+      fixture.componentRef.setInput('firstDayOfWeek', 0);
+      fixture.componentRef.setInput('visibleDays', 'mondayToSaturday');
+      fixture.detectChanges();
+
+      expect(assertGridMatchesOracle().length).toBe(36);
+      const headers = renderedHeaders();
+      expect(headers.length).toBe(6);
+      const monday = new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(
+        new Date(2024, 0, 1),
+      );
+      const sunday = new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(
+        new Date(2024, 0, 7),
+      );
+      expect(headers[0].textContent).toContain(monday);
+      expect(headers.some((h) => h.textContent!.includes(sunday))).toBe(false);
+    });
+
+    it('binds the resolved column count as --cld-week-columns on the section', () => {
+      const section = fixture.nativeElement.querySelector('section.cld-month') as HTMLElement;
+
+      fixture.componentRef.setInput('visibleDays', 'mondayToFriday');
+      fixture.detectChanges();
+      expect(section.style.getPropertyValue('--cld-week-columns')).toBe('5');
+
+      fixture.componentRef.setInput('visibleDays', 'mondayToSaturday');
+      fixture.detectChanges();
+      expect(section.style.getPropertyValue('--cld-week-columns')).toBe('6');
+
+      fixture.componentRef.setInput('visibleDays', 'all');
+      fixture.detectChanges();
+      expect(section.style.getPropertyValue('--cld-week-columns')).toBe('7');
+    });
+
+    it('keeps value on a hidden weekday without rendering a selected cell', () => {
+      fixture.componentRef.setInput('visibleDays', 'mondayToFriday');
+      fixture.detectChanges();
+
+      const view = component.view();
+      const saturday = new Date(view.getFullYear(), view.getMonth(), 1);
+      while (saturday.getDay() !== 6) {
+        saturday.setDate(saturday.getDate() + 1);
+      }
+      component.value.set(saturday);
+      fixture.detectChanges();
+
+      expect(isSameDay(component.value()!, saturday)).toBe(true);
+      expect(fixture.nativeElement.querySelectorAll('button.cld-month__day--selected').length).toBe(
+        0,
+      );
+    });
+
+    it('leaves navigation unchanged', () => {
+      fixture.componentRef.setInput('visibleDays', 'mondayToFriday');
+      fixture.detectChanges();
+
+      const emitted: Date[] = [];
+      component.monthChange.subscribe((d) => emitted.push(d));
+
+      const navButtons = fixture.nativeElement.querySelectorAll('button.cld-month__nav');
+      navButtons[1].click(); // next
+      fixture.detectChanges();
+
+      const monthStart = startOfMonth(new Date());
+      const expected = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1);
+      expect(monthTitle('en-US', component.view())).toBe(monthTitle('en-US', expected));
+      expect(emitted.length).toBe(1);
+      expect(assertGridMatchesOracle().length).toBe(30);
+    });
+  });
 });
 
 describe('CalendulumMonth with custom dayCell', () => {
@@ -409,6 +700,85 @@ describe('CalendulumMonth custom dayCell interaction parity', () => {
     expect(emitted.length).toBe(1);
     expect([emitted[0].x, emitted[0].y]).toEqual([0, 0]);
     expect(fixture.componentInstance.month.value()).not.toBeNull();
+  });
+});
+
+describe('CalendulumMonth disabled custom dayCell', () => {
+  @Component({
+    imports: [CalendulumMonth],
+    template: `
+      <calendulum-month [dayCell]="cell" [isDayDisabled]="disabled" />
+      <ng-template #cell let-day>
+        <span class="custom-cell">{{ day.date.getDate() }}{{ day.isDisabled ? '-D' : '' }}</span>
+      </ng-template>
+    `,
+  })
+  class DisabledHost {
+    @ViewChild(CalendulumMonth) month!: CalendulumMonth;
+    disabled = (d: Date) => d.getDate() === 15;
+  }
+
+  let fixture: ComponentFixture<DisabledHost>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [DisabledHost] }).compileComponents();
+    fixture = TestBed.createComponent(DisabledHost);
+    fixture.detectChanges();
+  });
+
+  function dayWrapper(day: number): HTMLElement {
+    const wrappers = Array.from(
+      fixture.nativeElement.querySelectorAll('.cld-month__cell'),
+    ) as HTMLElement[];
+    const match = wrappers.find((w) => {
+      const text = w.querySelector('.custom-cell')?.textContent?.trim() ?? '';
+      return Number(text.replace('-D', '')) === day;
+    });
+    expect(match).toBeDefined();
+    return match!;
+  }
+
+  it('exposes isDisabled in the context only for the rejected date', () => {
+    const cells = Array.from(
+      fixture.nativeElement.querySelectorAll('.custom-cell') as NodeListOf<HTMLElement>,
+    );
+    const marked = cells.filter((c) => c.textContent!.includes('-D'));
+    expect(marked.length).toBe(1);
+    expect(Number(marked[0].textContent!.trim().replace('-D', ''))).toBe(15);
+  });
+
+  it('blocks Enter and Space on the disabled wrapper', () => {
+    const emitted: CalendulumDayClickEvent[] = [];
+    fixture.componentInstance.month.dayClick.subscribe((e) => emitted.push(e));
+
+    const wrapper = dayWrapper(15);
+    wrapper.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    wrapper.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(emitted.length).toBe(0);
+    expect(fixture.componentInstance.month.value()).toBeNull();
+  });
+
+  it('still activates enabled wrappers while the predicate is set', () => {
+    const emitted: CalendulumDayClickEvent[] = [];
+    fixture.componentInstance.month.dayClick.subscribe((e) => emitted.push(e));
+
+    dayWrapper(16).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(emitted.length).toBe(1);
+    expect(fixture.componentInstance.month.value()).not.toBeNull();
+  });
+
+  it('marks the disabled wrapper aria-disabled and keeps it focusable', () => {
+    const disabled = dayWrapper(15);
+    expect(disabled.getAttribute('aria-disabled')).toBe('true');
+    expect(disabled.getAttribute('tabindex')).toBe('0');
+
+    const enabled = dayWrapper(16);
+    expect(enabled.getAttribute('aria-disabled')).toBeNull();
+    expect(enabled.getAttribute('tabindex')).toBe('0');
   });
 });
 
@@ -581,6 +951,48 @@ describe('CalendulumMonth with dayCellTop/dayCellBottom slots', () => {
   });
 });
 
+describe('CalendulumMonth dayCellBottom slot exposes isDisabled', () => {
+  @Component({
+    imports: [CalendulumMonth],
+    template: `
+      <calendulum-month [dayCellBottom]="bottom" [isDayDisabled]="disabled" />
+      <ng-template #bottom let-day>
+        <span class="bottom-slot">{{ day.isDisabled ? 'D' : '' }}</span>
+      </ng-template>
+    `,
+  })
+  class DisabledSlotHost {
+    @ViewChild(CalendulumMonth) month!: CalendulumMonth;
+    disabled = (d: Date) => d.getDate() === 15;
+  }
+
+  let fixture: ComponentFixture<DisabledSlotHost>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [DisabledSlotHost] }).compileComponents();
+    fixture = TestBed.createComponent(DisabledSlotHost);
+    fixture.detectChanges();
+  });
+
+  it('renders the disabled mark in the bottom slot only for the disabled day', () => {
+    const bottoms = Array.from(
+      fixture.nativeElement.querySelectorAll('.bottom-slot'),
+    ) as HTMLElement[];
+    expect(bottoms.length).toBe(42);
+
+    const marked = bottoms.filter((s) => s.textContent === 'D');
+    expect(marked.length).toBe(1);
+
+    const button = marked[0].closest('button.cld-month__day') as HTMLButtonElement;
+    const dayNumber = Array.from(button.childNodes)
+      .filter((n) => n.nodeType === Node.TEXT_NODE)
+      .map((n) => n.textContent)
+      .join('')
+      .trim();
+    expect(Number(dayNumber)).toBe(15);
+  });
+});
+
 describe('CalendulumMonth with dayCell alongside slots', () => {
   @Component({
     imports: [CalendulumMonth],
@@ -651,20 +1063,20 @@ describe('resolveCellClasses', () => {
   const outside: DayCell = { date: new Date(2026, 7, 31), inMonth: false };
 
   it('returns the today and selected state classes', () => {
-    expect(resolveCellClasses(inMonth, true, true, undefined)).toEqual([
+    expect(resolveCellClasses(inMonth, true, true, false, undefined)).toEqual([
       'cld-month__day--today',
       'cld-month__day--selected',
     ]);
   });
 
   it('marks outside cells with the outside state class', () => {
-    expect(resolveCellClasses(outside, false, false, undefined)).toEqual([
+    expect(resolveCellClasses(outside, false, false, false, undefined)).toEqual([
       'cld-month__day--outside',
     ]);
   });
 
   it('appends the consumer class without replacing state classes', () => {
-    expect(resolveCellClasses(inMonth, true, true, { class: 'hl' })).toEqual([
+    expect(resolveCellClasses(inMonth, true, true, false, { class: 'hl' })).toEqual([
       'cld-month__day--today',
       'cld-month__day--selected',
       'hl',
@@ -672,7 +1084,7 @@ describe('resolveCellClasses', () => {
   });
 
   it('spreads array class entries after state classes', () => {
-    expect(resolveCellClasses(inMonth, false, true, { class: ['a', 'b'] })).toEqual([
+    expect(resolveCellClasses(inMonth, false, true, false, { class: ['a', 'b'] })).toEqual([
       'cld-month__day--selected',
       'a',
       'b',
@@ -680,6 +1092,45 @@ describe('resolveCellClasses', () => {
   });
 
   it('returns no classes for a plain in-month day', () => {
-    expect(resolveCellClasses(inMonth, false, false, undefined)).toEqual([]);
+    expect(resolveCellClasses(inMonth, false, false, false, undefined)).toEqual([]);
+  });
+
+  it('appends the disabled state class between selected and consumer classes', () => {
+    expect(resolveCellClasses(inMonth, false, false, true, undefined)).toEqual([
+      'cld-month__day--disabled',
+    ]);
+  });
+
+  it('combines disabled with today and selected in deterministic order', () => {
+    expect(resolveCellClasses(inMonth, true, true, true, undefined)).toEqual([
+      'cld-month__day--today',
+      'cld-month__day--selected',
+      'cld-month__day--disabled',
+    ]);
+  });
+
+  it('keeps consumer classes last when disabled combines with selection', () => {
+    expect(resolveCellClasses(inMonth, true, true, true, { class: 'hl' })).toEqual([
+      'cld-month__day--today',
+      'cld-month__day--selected',
+      'cld-month__day--disabled',
+      'hl',
+    ]);
+  });
+
+  it('spreads array class entries after the disabled state class', () => {
+    expect(resolveCellClasses(inMonth, false, true, true, { class: ['a', 'b'] })).toEqual([
+      'cld-month__day--selected',
+      'cld-month__day--disabled',
+      'a',
+      'b',
+    ]);
+  });
+
+  it('marks outside disabled cells with both state classes', () => {
+    expect(resolveCellClasses(outside, false, false, true, undefined)).toEqual([
+      'cld-month__day--outside',
+      'cld-month__day--disabled',
+    ]);
   });
 });

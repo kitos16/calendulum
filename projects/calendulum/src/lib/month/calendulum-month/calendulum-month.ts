@@ -12,6 +12,7 @@ import { LOCALE_ID } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 
 import {
+  CalendulumVisibleDays,
   DayCell,
   addMonths,
   buildMonthGrid,
@@ -19,6 +20,7 @@ import {
   isSameDay,
   isToday,
   monthTitle,
+  resolveVisibleWeekdays,
   startOfMonth,
   weekdayLabels,
 } from '../date-utils';
@@ -44,6 +46,7 @@ export interface CalendulumDayCellContext {
   inMonth: boolean;
   isToday: boolean;
   isSelected: boolean;
+  isDisabled: boolean;
 }
 
 /**
@@ -75,12 +78,14 @@ export function resolveCellClasses(
   cell: DayCell,
   today: boolean,
   selected: boolean,
+  disabled: boolean,
   style: DayStyle | undefined,
 ): string[] {
   const classes: string[] = [];
   if (!cell.inMonth) classes.push('cld-month__day--outside');
   if (today) classes.push('cld-month__day--today');
   if (selected) classes.push('cld-month__day--selected');
+  if (disabled) classes.push('cld-month__day--disabled');
   const extra = style?.class;
   if (typeof extra === 'string') {
     if (extra) classes.push(extra);
@@ -128,6 +133,22 @@ export class CalendulumMonth {
   /** Per-day styles keyed by local ISO date string (see `dateKey`). */
   readonly dayStyle = input<Record<string, DayStyle>>({});
 
+  /**
+   * Restricts which weekday columns render: a preset literal or an explicit
+   * weekday list (0 = Sunday … 6 = Saturday, order-insensitive). Whole
+   * columns are projected away — rows stay complete and 6-deep. Invalid
+   * values normalize to `'all'`.
+   */
+  readonly visibleDays = input<CalendulumVisibleDays>('all');
+
+  /**
+   * Predicate marking dates that must not be activated by the user (no
+   * `dayClick`, no selection). Programmatic `select()`/`goToToday()` stay
+   * unconditional. Pass a stable function reference — inline arrows re-fire
+   * on every change detection.
+   */
+  readonly isDayDisabled = input<(date: Date) => boolean>(() => false);
+
   /** Emitted with the first day of the month whenever the view month changes. */
   readonly monthChange = output<Date>();
 
@@ -139,11 +160,25 @@ export class CalendulumMonth {
 
   private readonly localeId = inject(LOCALE_ID);
 
-  /** 42-cell grid for the displayed month. */
-  readonly days = computed(() => buildMonthGrid(this.view(), this.firstDayOfWeek()));
+  /** Weekday numbers (0–6) that render as columns, from `visibleDays`. */
+  readonly visibleWeekdaySet = computed(() => resolveVisibleWeekdays(this.visibleDays()));
 
-  /** Weekday header labels in the active locale. */
-  readonly weekdays = computed(() => weekdayLabels(this.effectiveLocale(), this.firstDayOfWeek()));
+  /** Number of weekday columns to render (headers and grid tracks). */
+  readonly columnCount = computed(() => this.visibleWeekdaySet().size);
+
+  /** Grid filtered to the visible weekday columns (whole-column projection). */
+  readonly days = computed(() =>
+    buildMonthGrid(this.view(), this.firstDayOfWeek()).filter((cell) =>
+      this.visibleWeekdaySet().has(cell.date.getDay()),
+    ),
+  );
+
+  /** Weekday header labels in the active locale, aligned with the columns. */
+  readonly weekdays = computed(() => {
+    const labels = weekdayLabels(this.effectiveLocale(), this.firstDayOfWeek());
+    const first = this.firstDayOfWeek();
+    return labels.filter((_, i) => this.visibleWeekdaySet().has((i + first) % 7));
+  });
 
   /** Header title, e.g. "September 2026". */
   readonly title = computed(() => monthTitle(this.effectiveLocale(), this.view()));
@@ -161,6 +196,11 @@ export class CalendulumMonth {
     return isToday(date);
   }
 
+  /** Whether `date` is rejected by the `isDayDisabled` predicate. */
+  isDisabled(date: Date): boolean {
+    return this.isDayDisabled()(date);
+  }
+
   /** Builds the flat implicit context (`let-day`) for one grid cell. */
   cellContext(cell: DayCell): CalendulumDayCellContext {
     return {
@@ -168,6 +208,7 @@ export class CalendulumMonth {
       inMonth: cell.inMonth,
       isToday: this.isToday(cell.date),
       isSelected: this.isSelected(cell.date),
+      isDisabled: this.isDisabled(cell.date),
     };
   }
 
@@ -177,6 +218,7 @@ export class CalendulumMonth {
       cell,
       this.isToday(cell.date),
       this.isSelected(cell.date),
+      this.isDisabled(cell.date),
       this.dayStyle()[dateKey(cell.date)],
     );
   }
@@ -211,8 +253,12 @@ export class CalendulumMonth {
   /**
    * Emits `dayClick` with the event's viewport coordinates, then selects
    * the day — `dayClick` is additive to the existing `select()` behavior.
+   * Disabled dates short-circuit: no emission, no selection.
    */
   onDayClick(date: Date, event: MouseEvent): void {
+    if (this.isDisabled(date)) {
+      return;
+    }
     this.dayClick.emit({ date, x: event.clientX, y: event.clientY });
     this.select(date);
   }
@@ -221,8 +267,12 @@ export class CalendulumMonth {
    * Keyboard activation for custom day cells (Enter/Space). A
    * `KeyboardEvent` carries no viewport coordinates, so the payload uses
    * the documented `{ x: 0, y: 0 }` convention and selection still applies.
+   * Disabled dates short-circuit: no emission, no selection.
    */
   onDayKeydown(date: Date): void {
+    if (this.isDisabled(date)) {
+      return;
+    }
     this.dayClick.emit({ date, x: 0, y: 0 });
     this.select(date);
   }

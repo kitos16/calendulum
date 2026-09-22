@@ -13,6 +13,8 @@ A reusable, customizable calendar suite for modern Angular (17+). Standalone com
 - [Custom templates](#custom-templates)
 - [Per-day styling (`dayStyle`)](#per-day-styling-daystyle)
 - [Day clicks (`dayClick`)](#day-clicks-dayclick)
+- [Disabled days (`isDayDisabled`)](#disabled-days-isdaydisabled)
+- [Visible days (`visibleDays`)](#visible-days-visibledays)
 - [Day cell slots](#day-cell-slots)
 - [Development](#development)
 - [Roadmap](#roadmap)
@@ -45,16 +47,18 @@ export class App {
 
 ### `CalendulumMonth`
 
-| Input             | Type                                                   | Default     | Description                                                                           |
-| ----------------- | ------------------------------------------------------ | ----------- | ------------------------------------------------------------------------------------- |
-| `value` (model)   | `Date \| null`                                         | `null`      | Selected day. Two-way bindable with `[(value)]`.                                      |
-| `firstDayOfWeek`  | `0 \| 1`                                               | `1`         | `1` = Monday-first, `0` = Sunday-first.                                               |
-| `locale`          | `string`                                               | `LOCALE_ID` | Locale used for titles and weekday labels.                                            |
-| `showOutsideDays` | `boolean`                                              | `true`      | Render the 42-cell grid with neighbor-month days.                                     |
-| `dayCell`         | `TemplateRef<{ $implicit: CalendulumDayCellContext }>` | —           | Replaces the default day button.                                                      |
-| `dayCellTop`      | `TemplateRef<{ $implicit: CalendulumDayCellContext }>` | —           | Overlay template above the day number (default button only).                          |
-| `dayCellBottom`   | `TemplateRef<{ $implicit: CalendulumDayCellContext }>` | —           | Overlay template below the day number (default button only).                          |
-| `dayStyle`        | `Record<string, DayStyle>`                             | `{}`        | Per-day styles keyed by local ISO date — see [`dayStyle`](#per-day-styling-daystyle). |
+| Input             | Type                                                                    | Default       | Description                                                                                |
+| ----------------- | ----------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------ |
+| `value` (model)   | `Date \| null`                                                          | `null`        | Selected day. Two-way bindable with `[(value)]`.                                           |
+| `firstDayOfWeek`  | `0 \| 1`                                                                | `1`           | `1` = Monday-first, `0` = Sunday-first.                                                    |
+| `locale`          | `string`                                                                | `LOCALE_ID`   | Locale used for titles and weekday labels.                                                 |
+| `showOutsideDays` | `boolean`                                                               | `true`        | Render the 42-cell grid with neighbor-month days.                                          |
+| `dayCell`         | `TemplateRef<{ $implicit: CalendulumDayCellContext }>`                  | —             | Replaces the default day button.                                                           |
+| `dayCellTop`      | `TemplateRef<{ $implicit: CalendulumDayCellContext }>`                  | —             | Overlay template above the day number (default button only).                               |
+| `dayCellBottom`   | `TemplateRef<{ $implicit: CalendulumDayCellContext }>`                  | —             | Overlay template below the day number (default button only).                               |
+| `dayStyle`        | `Record<string, DayStyle>`                                              | `{}`          | Per-day styles keyed by local ISO date — see [`dayStyle`](#per-day-styling-daystyle).      |
+| `isDayDisabled`   | `(date: Date) => boolean`                                               | `() => false` | Marks dates that refuse UI activation — see [disabled days](#disabled-days-isdaydisabled). |
+| `visibleDays`     | `'all' \| 'mondayToFriday' \| 'mondayToSaturday' \| readonly Weekday[]` | `'all'`       | Projects whole weekday columns — see [visible days](#visible-days-visibledays).            |
 
 | Output        | Type                      | Description                                                                        |
 | ------------- | ------------------------- | ---------------------------------------------------------------------------------- |
@@ -62,8 +66,9 @@ export class App {
 | `dayClick`    | `CalendulumDayClickEvent` | Emits `{ date, x, y }` on day activation — see [day clicks](#day-clicks-dayclick). |
 
 `CalendulumDayCellContext` is the implicit template context (bound via `let-day`) and exposes
-`{ date: Date, inMonth: boolean, isToday: boolean, isSelected: boolean }` — the flags reflect
-the current `value` and today at render time.
+`{ date: Date, inMonth: boolean, isToday: boolean, isSelected: boolean, isDisabled: boolean }`
+— the flags reflect the current `value`, today, and the `isDayDisabled` predicate at render
+time. The type and this documentation always match field-for-field.
 
 ## Theming
 
@@ -127,10 +132,15 @@ win over `dayStyle`**:
 
 - Today and selected cells keep their state background/text color even when the entry sets
   `background` or `color`.
-- A `dayStyle` `border` **always applies** — the state rules do not set a border.
+- A `dayStyle` `border` **always applies** — the state rules do not set a border (the one
+  documented exception).
 - Consumer `class` entries are merged with (never replace) the state classes.
 - Outside (neighbor-month) cells: the `--outside` state class overrides the cell text color,
   so a `color` entry has no visible effect on them (backgrounds and borders still apply).
+
+The full visual precedence ladder, highest first: selected background/text > today/disabled
+state styles > hover > `dayStyle` background/color — with `dayStyle` border as the exception
+that always applies.
 
 ## Day clicks (`dayClick`)
 
@@ -155,6 +165,78 @@ onDayClick({ date, x, y }: CalendulumDayClickEvent) {
   popover.show(date, { left: x - host.left, top: y - host.top });
 }
 ```
+
+## Disabled days (`isDayDisabled`)
+
+Mark dates that must not be activatable (booked, holidays, past) with a predicate:
+
+```ts
+import { dateKey } from 'calendulum';
+
+const holidayKeys = new Set([dateKey(new Date(2026, 11, 25))]);
+const isDayDisabled = (d: Date) => holidayKeys.has(dateKey(d));
+```
+
+```html
+<calendulum-month [isDayDisabled]="isDayDisabled" />
+```
+
+Pass a **stable function reference** — inline arrows (`[isDayDisabled]="(d) => ..."`) create a
+new function every change detection and re-fire the predicate for every cell. The key-set recipe
+above (`Set` of `dateKey()` strings + a stable closure) is the recommended pattern for a fixed
+set of dates; ranges and recurring rules are one-liners in the same shape.
+
+Disabled state is **UI-only**:
+
+- Disabled dates emit no `dayClick` and never set `value` — from the default button, the custom
+  `dayCell` wrapper, and outside-month cells alike (Enter/Space included).
+- Programmatic `select(date)` and `goToToday()` stay unconditional: a disabled date can still
+  hold the `value` model, and today can be disabled without breaking "Today".
+- Disabled cells stay **focusable** — `aria-disabled="true"` with no native `disabled`
+  attribute, on both branches, so screen-reader users still reach and hear the date.
+- Cells resolve the `cld-month__day--disabled` state class (appended by `resolveCellClasses`).
+  The stylesheet suppresses the hover background and the pointer cursor, while today/selected
+  visuals still apply (a disabled today keeps its ring; a disabled selected day keeps its
+  accent). The disabled hover neutralizer yields to the selected hover background.
+- Templates receive `isDisabled` in the context, so custom `dayCell` content can render its own
+  disabled affordance:
+
+```html
+<calendulum-month [dayCell]="dayCell" [isDayDisabled]="isDayDisabled" />
+<ng-template #dayCell let-day>
+  <span [class.struck]="day.isDisabled">{{ day.date.getDate() }}</span>
+</ng-template>
+```
+
+## Visible days (`visibleDays`)
+
+Restrict the calendar to a working-week view by projecting away whole weekday columns — never
+individual dates, so every row stays complete and the grid always renders **6 rows**:
+
+- `'all'` (default) — 7 columns, 42 cells.
+- `'mondayToFriday'` — {1,2,3,4,5}, 5 columns, 30 cells.
+- `'mondayToSaturday'` — {1,2,3,4,5,6}, 6 columns, 36 cells.
+- `readonly Weekday[]` — any weekday list (`0` = Sunday … `6` = Saturday); values are deduped
+  and sorted, out-of-range numbers are dropped, and an empty resolved set falls back to
+  `'all'` — the grid never renders zero columns. Any other value also normalizes to `'all'`.
+
+```html
+<calendulum-month [visibleDays]="'mondayToFriday'" />
+```
+
+Column count is derived from the resolved set and bound as `--cld-week-columns` on the section;
+both the header track and the grid consume it (`repeat(var(--cld-week-columns), 1fr)`), so
+labels always align with their columns. It is safe to combine with `dayStyle`, `dayCell`, the
+slots, and `isDayDisabled` — the predicate is only consulted for cells that exist.
+
+Behavioral notes:
+
+- **Hidden weekday `value`**: the model is authoritative, the view is a projection. A `value`
+  landing on a hidden weekday stays set with no selected cell rendered.
+- **`firstDayOfWeek=0` + `mondayToSaturday`**: the Sunday column simply does not exist — the
+  first column is Monday (label order still follows `firstDayOfWeek`).
+- **Navigation is unchanged** by `visibleDays`: months move and `monthChange` fires the same,
+  with the same filter applied to the new month.
 
 ## Day cell slots
 

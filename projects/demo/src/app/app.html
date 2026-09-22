@@ -72,5 +72,55 @@
         «hoy» usa <code>day.isToday</code> real.
       </p>
     </article>
+
+    <article class="demo__card">
+      <h2 class="demo__card-title">Días deshabilitados</h2>
+      <calendulum-month [isDayDisabled]="isDayDisabled" [dayCell]="disabledCell" />
+      <ng-template #disabledCell let-day>
+        <span class="day-cell" [class.day-cell--disabled]="day.isDisabled">
+          {{ day.date.getDate() }}
+        </span>
+      </ng-template>
+      <p class="demo__value">
+        <code>isDayDisabled</code> con la receta de key-set: un predicado estable sobre un
+        <code>Set</code> de <code>dateKey()</code> (hoy + 2 días). El bloqueo es solo de interfaz —
+        <code>select()</code> sigue siendo incondicional.
+      </p>
+    </article>
+
+    <article class="demo__card">
+      <h2 class="demo__card-title">Días visibles</h2>
+      <calendulum-month [visibleDays]="visibleDays()" [(value)]="selected" />
+      <div class="demo__filters">
+        <button
+          type="button"
+          class="demo__filter"
+          [class.demo__filter--on]="visibleDays() === 'all'"
+          (click)="visibleDays.set('all')"
+        >
+          Todas
+        </button>
+        <button
+          type="button"
+          class="demo__filter"
+          [class.demo__filter--on]="visibleDays() === 'mondayToFriday'"
+          (click)="visibleDays.set('mondayToFriday')"
+        >
+          Lun–Vie
+        </button>
+        <button
+          type="button"
+          class="demo__filter"
+          [class.demo__filter--on]="visibleDays() === 'mondayToSaturday'"
+          (click)="visibleDays.set('mondayToSaturday')"
+        >
+          Lun–Sáb
+        </button>
+      </div>
+      <p class="demo__value">
+        <code>visibleDays</code> proyecta columnas enteras: 7, 5 o 6 columnas; las 6 filas se
+        mantienen estables.
+      </p>
+    </article>
   </section>
 </main>

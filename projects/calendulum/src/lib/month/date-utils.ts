@@ -14,6 +14,45 @@ export interface DayCell {
   readonly inMonth: boolean;
 }
 
+/** A weekday number: 0 = Sunday through 6 = Saturday. */
+export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+/**
+ * Accepted `visibleDays` values: a preset literal or an explicit list of
+ * weekday numbers (order-insensitive, deduped by the resolver).
+ */
+export type CalendulumVisibleDays =
+  'all' | 'mondayToFriday' | 'mondayToSaturday' | readonly Weekday[];
+
+/**
+ * Normalizes a `visibleDays` value to a canonical sorted set of weekday
+ * numbers (0 = Sunday … 6 = Saturday).
+ *
+ * - Presets expand to fixed sets, independent of any `firstDayOfWeek`.
+ * - Arrays are deduped and sorted; out-of-range values are dropped.
+ * - An empty resolved set or any unknown value falls back to `'all'`, so a
+ *   grid can never project to zero columns.
+ */
+export function resolveVisibleWeekdays(visibleDays: CalendulumVisibleDays): Set<number> {
+  if (visibleDays === 'mondayToFriday') {
+    return new Set([1, 2, 3, 4, 5]);
+  }
+  if (visibleDays === 'mondayToSaturday') {
+    return new Set([1, 2, 3, 4, 5, 6]);
+  }
+  if (Array.isArray(visibleDays)) {
+    const resolved = new Set<number>(
+      visibleDays
+        .filter((day): day is Weekday => Number.isInteger(day) && day >= 0 && day <= 6)
+        .sort((a, b) => a - b),
+    );
+    if (resolved.size > 0) {
+      return resolved;
+    }
+  }
+  return new Set([0, 1, 2, 3, 4, 5, 6]);
+}
+
 /** Returns a new Date at the first day of the month of `date`. */
 export function startOfMonth(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1);

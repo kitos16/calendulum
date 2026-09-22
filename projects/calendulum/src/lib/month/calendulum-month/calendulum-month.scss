@@ -74,7 +74,7 @@
 
 .cld-month__weekdays {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(var(--cld-week-columns, 7), 1fr);
   gap: 0.25rem;
   margin-bottom: 0.25rem;
 }
@@ -91,7 +91,7 @@
 
 .cld-month__grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(var(--cld-week-columns, 7), 1fr);
   gap: 0.25rem;
 }
 
@@ -150,6 +150,21 @@
 .cld-month__day--selected {
   background: var(--cld-accent);
   color: var(--cld-accent-contrast);
+}
+
+.cld-month__day--disabled {
+  color: var(--cld-text-muted);
+  cursor: not-allowed;
+}
+
+/*
+ * Hover neutralizer for disabled days. Plain disabled cells lose the hover
+ * background; the neutralizer is declared before the selected:hover rule so
+ * a disabled+selected cell keeps its accent background on hover (both rules
+ * share (0,2,0) specificity — later source wins).
+ */
+.cld-month__day--disabled:hover {
+  background: transparent;
 }
 
 .cld-month__day--selected:hover {

@@ -1,4 +1,4 @@
-<section class="cld-month" aria-label="Calendar">
+<section class="cld-month" aria-label="Calendar" [style.--cld-week-columns]="columnCount()">
   <header class="cld-month__header">
     <button
       type="button"
@@ -32,6 +32,7 @@
           role="button"
           tabindex="0"
           [class.cld-month__cell--outside]="!cell.inMonth"
+          [attr.aria-disabled]="isDisabled(cell.date) ? 'true' : null"
           (click)="onDayClick(cell.date, $event)"
           (keydown.enter)="onDayKeydown(cell.date)"
           (keydown.space)="onDayKeydown(cell.date)"
@@ -48,6 +49,7 @@
           [class]="cellClasses(cell)"
           [style]="cellStyle(cell)"
           [attr.aria-selected]="isSelected(cell.date)"
+          [attr.aria-disabled]="isDisabled(cell.date) ? 'true' : null"
           [attr.aria-label]="cell.date.toLocaleDateString()"
           (click)="onDayClick(cell.date, $event)"
         >
