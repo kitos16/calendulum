@@ -140,6 +140,11 @@ const styles: Record<string, DayStyle> = {
 <calendulum-month [dayStyle]="styles" />
 ```
 
+<!-- Screenshots: place in docs/screenshots/ -->
+<!-- ![DayStyle - Border](docs/screenshots/daystyle-border.png) -->
+<!-- ![DayStyle - Background](docs/screenshots/daystyle-background.png) -->
+<!-- ![DayStyle - Classes](docs/screenshots/daystyle-classes.png) -->
+
 Each entry may set `border`, `color`, `background` (raw CSS strings) and `class` (string or
 string array). They are applied through the per-cell custom properties `--cld-day-border`,
 `--cld-day-color`, and `--cld-day-bg`, consumed by the base cell rule — so **state classes
@@ -171,6 +176,9 @@ Keyboard activation (custom `dayCell` only — Enter and Space) also emits `dayC
 `KeyboardEvent` carries no coordinates, so the payload uses the documented convention
 `{ date, x: 0, y: 0 }`.
 
+<!-- Screenshots: place in docs/screenshots/ -->
+<!-- ![Day Click](docs/screenshots/day-click.png) -->
+
 To anchor a popover or tooltip to the clicked day, translate the viewport point into the
 calendar's coordinate space:
 
@@ -195,6 +203,9 @@ const isDayDisabled = (d: Date) => holidayKeys.has(dateKey(d));
 ```html
 <calendulum-month [isDayDisabled]="isDayDisabled" />
 ```
+
+<!-- Screenshots: place in docs/screenshots/ -->
+<!-- ![Disabled Days](docs/screenshots/disabled-days.png) -->
 
 Pass a **stable function reference** — inline arrows (`[isDayDisabled]="(d) => ..."`) create a
 new function every change detection and re-fire the predicate for every cell. The key-set recipe
@@ -239,6 +250,11 @@ individual dates, so every row stays complete and the grid always renders **6 ro
 <calendulum-month [visibleDays]="'mondayToFriday'" />
 ```
 
+<!-- Screenshots: place in docs/screenshots/ -->
+<!-- ![Visible Days - All](docs/screenshots/visible-days-all.png) -->
+<!-- ![Visible Days - Mon-Fri](docs/screenshots/visible-days-mon-fri.png) -->
+<!-- ![Visible Days - Mon-Sat](docs/screenshots/visible-days-mon-sat.png) -->
+
 Column count is derived from the resolved set and bound as `--cld-week-columns` on the section;
 both the header track and the grid consume it (`repeat(var(--cld-week-columns), 1fr)`), so
 labels always align with their columns. It is safe to combine with `dayStyle`, `dayCell`, the
@@ -267,12 +283,21 @@ same context as `dayCell`:
 <ng-template #bottom let-day> @if (day.isSelected) { <span class="dot">●</span> } </ng-template>
 ```
 
+<!-- Screenshots: place in docs/screenshots/ -->
+<!-- ![Day Cell Slots - Top](docs/screenshots/daycell-slots-top.png) -->
+<!-- ![Day Cell Slots - Bottom](docs/screenshots/daycell-slots-bottom.png) -->
+
 Slot content never intercepts pointer events — clicks landing on it still activate the day.
 When `dayCell` is provided, it fully replaces the cell and slots do not render.
 
 ## Visual theming
 
 Three discrete inputs let you scale the entire component without custom CSS:
+
+<!-- Screenshots: place in docs/screenshots/ -->
+<!-- ![Visual Theme - Default](docs/screenshots/visual-theme-default.png) -->
+<!-- ![Visual Theme - Compact](docs/screenshots/visual-theme-compact.png) -->
+<!-- ![Visual Theme - Comfortable](docs/screenshots/visual-theme-comfortable.png) -->
 
 | Input          | Type                                | Default  | Effect                                                                                                   |
 | -------------- | ----------------------------------- | -------- | -------------------------------------------------------------------------------------------------------- |
@@ -295,6 +320,10 @@ The inputs accept only their discrete tiers; invalid values fall back to the def
 
 Two bounds inputs clamp the calendar to an absolute date range, and a month selector
 gives users a faster way to jump months.
+
+<!-- Screenshots: place in docs/screenshots/ -->
+<!-- ![Extended Navigation - Bounds](docs/screenshots/extended-navigation-bounds.png) -->
+<!-- ![Extended Navigation - Month Selector Dropdown](docs/screenshots/extended-navigation-dropdown.png) -->
 
 ### Bounds (`minDate`, `maxDate`)
 
@@ -345,6 +374,11 @@ The dropdown uses a native `<select>` for full accessibility; options are filter
 
 The `selectionMode` input controls how `value` behaves and how users select dates.
 
+<!-- Screenshots: place in docs/screenshots/ -->
+<!-- ![Selection Mode - Single](docs/screenshots/selection-mode-single.png) -->
+<!-- ![Selection Mode - Multiple](docs/screenshots/selection-mode-multiple.png) -->
+<!-- ![Selection Mode - Range](docs/screenshots/selection-mode-range.png) -->
+
 ```html
 <calendulum-month selectionMode="range" [(value)]="range" />
 ```
@@ -394,6 +428,9 @@ template context so custom `dayCell`/`dayCellTop`/`dayCellBottom` templates can 
   @if (day.weekNumber) { <span class="wk">{{ day.weekNumber }}</span> }
 </ng-template>
 ```
+
+<!-- Screenshots: place in docs/screenshots/ -->
+<!-- ![Week Numbers](docs/screenshots/week-numbers.png) -->
 
 The week numbers follow ISO 8601 (week 1 = the week containing the first Thursday). They
 work with `visibleDays` and `selectionMode` — the column is always the first column
