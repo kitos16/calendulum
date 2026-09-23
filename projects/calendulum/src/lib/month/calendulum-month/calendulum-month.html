@@ -1,78 +1,116 @@
-<section class="cld-month" aria-label="Calendar" [style.--cld-week-columns]="columnCount()">
+<section class="cld-month" aria-label="Calendar" [style.--cld-week-columns]="weekColumns()">
   <header class="cld-month__header">
-    <button
-      type="button"
-      class="cld-month__nav"
-      (click)="previous()"
-      [attr.aria-label]="'Previous month'"
-    >
-      &lsaquo;
-    </button>
+    @if (monthSelector() !== 'none') {
+      @if (monthSelector() === 'arrows') {
+        <button
+          type="button"
+          class="cld-month__nav"
+          (click)="previous()"
+          [attr.aria-label]="'Previous month'"
+          [attr.aria-disabled]="!canGoPrevious()"
+        >
+          &lsaquo;
+        </button>
+      }
 
-    <h2 class="cld-month__title">{{ title() }}</h2>
+      <h2 class="cld-month__title">{{ title() }}</h2>
 
-    <button type="button" class="cld-month__nav" (click)="next()" [attr.aria-label]="'Next month'">
-      &rsaquo;
-    </button>
+      @if (monthSelector() === 'arrows') {
+        <button
+          type="button"
+          class="cld-month__nav"
+          (click)="next()"
+          [attr.aria-label]="'Next month'"
+          [attr.aria-disabled]="!canGoNext()"
+        >
+          &rsaquo;
+        </button>
+      } @else if (monthSelector() === 'dropdown') {
+        <label [for]="monthSelectId" class="cld-month__month-label">Month</label>
+        <select
+          id="{{ monthSelectId }}"
+          class="cld-month__month-select"
+          [value]="view().getTime()"
+          (change)="onMonthSelectChange($event)"
+          [attr.aria-label]="'Month'"
+        >
+          @for (option of monthOptions(); track option.value.getTime()) {
+            <option [value]="option.value.getTime()">{{ option.label }}</option>
+          }
+        </select>
+      }
+    } @else {
+      <h2 class="cld-month__title">{{ title() }}</h2>
+    }
 
     <button type="button" class="cld-month__today" (click)="goToToday()">Today</button>
   </header>
 
   <div class="cld-month__weekdays" role="row">
+    @if (weekNumbers()) {
+      <span class="cld-month__weekday cld-month__weekday--week-number" role="columnheader">Wk</span>
+    }
     @for (label of weekdays(); track label) {
       <span class="cld-month__weekday" role="columnheader">{{ label }}</span>
     }
   </div>
 
   <div class="cld-month__grid" role="grid">
-    @for (cell of days(); track cell.date.getTime()) {
-      @if (dayCell(); as cellTemplate) {
-        <div
-          class="cld-month__cell"
-          role="button"
-          tabindex="0"
-          [class.cld-month__cell--outside]="!cell.inMonth"
-          [attr.aria-disabled]="isDisabled(cell.date) ? 'true' : null"
-          (click)="onDayClick(cell.date, $event)"
-          (keydown.enter)="onDayKeydown(cell.date)"
-          (keydown.space)="onDayKeydown(cell.date)"
-        >
-          <ng-template
-            [ngTemplateOutlet]="cellTemplate"
-            [ngTemplateOutletContext]="{ $implicit: cellContext(cell) }"
-          />
-        </div>
-      } @else if (cell.inMonth || showOutsideDays()) {
-        <button
-          type="button"
-          class="cld-month__day"
-          [class]="cellClasses(cell)"
-          [style]="cellStyle(cell)"
-          [attr.aria-selected]="isSelected(cell.date)"
-          [attr.aria-disabled]="isDisabled(cell.date) ? 'true' : null"
-          [attr.aria-label]="cell.date.toLocaleDateString()"
-          (click)="onDayClick(cell.date, $event)"
-        >
-          @if (dayCellTop(); as topTemplate) {
-            <span class="cld-month__day-top">
-              <ng-template
-                [ngTemplateOutlet]="topTemplate"
-                [ngTemplateOutletContext]="{ $implicit: cellContext(cell) }"
-              />
-            </span>
-          }
-          {{ cell.date.getDate() }}
-          @if (dayCellBottom(); as bottomTemplate) {
-            <span class="cld-month__day-bottom">
-              <ng-template
-                [ngTemplateOutlet]="bottomTemplate"
-                [ngTemplateOutletContext]="{ $implicit: cellContext(cell) }"
-              />
-            </span>
-          }
-        </button>
-      } @else {
-        <span class="cld-month__cell" aria-hidden="true"></span>
+    @for (row of dayRows(); track row[0].date.getTime()) {
+      @if (weekNumbers()) {
+        <span class="cld-month__week-number" [attr.aria-label]="'Week ' + getWeekNumberForRow(row)">
+          {{ getWeekNumberForRow(row) }}
+        </span>
+      }
+      @for (cell of row; track cell.date.getTime()) {
+        @if (dayCell(); as cellTemplate) {
+          <div
+            class="cld-month__cell"
+            role="button"
+            tabindex="0"
+            [class.cld-month__cell--outside]="!cell.inMonth"
+            [attr.aria-disabled]="isDisabled(cell.date) ? 'true' : null"
+            (click)="onDayClick(cell.date, $event)"
+            (keydown.enter)="onDayKeydown(cell.date)"
+            (keydown.space)="onDayKeydown(cell.date)"
+          >
+            <ng-template
+              [ngTemplateOutlet]="cellTemplate"
+              [ngTemplateOutletContext]="{ $implicit: cellContextWithWeekNumber(cell) }"
+            />
+          </div>
+        } @else if (cell.inMonth || showOutsideDays()) {
+          <button
+            type="button"
+            class="cld-month__day"
+            [class]="cellClassesWithRange(cell)"
+            [style]="cellStyle(cell)"
+            [attr.aria-selected]="isSelected(cell.date)"
+            [attr.aria-disabled]="isDisabled(cell.date) ? 'true' : null"
+            [attr.aria-label]="cell.date.toLocaleDateString()"
+            (click)="onDayClick(cell.date, $event)"
+          >
+            @if (dayCellTop(); as topTemplate) {
+              <span class="cld-month__day-top">
+                <ng-template
+                  [ngTemplateOutlet]="topTemplate"
+                  [ngTemplateOutletContext]="{ $implicit: cellContextWithWeekNumber(cell) }"
+                />
+              </span>
+            }
+            {{ cell.date.getDate() }}
+            @if (dayCellBottom(); as bottomTemplate) {
+              <span class="cld-month__day-bottom">
+                <ng-template
+                  [ngTemplateOutlet]="bottomTemplate"
+                  [ngTemplateOutletContext]="{ $implicit: cellContextWithWeekNumber(cell) }"
+                />
+              </span>
+            }
+          </button>
+        } @else {
+          <span class="cld-month__cell" aria-hidden="true"></span>
+        }
       }
     }
   </div>

@@ -16,6 +16,10 @@ A reusable, customizable calendar suite for modern Angular (17+). Standalone com
 - [Disabled days (`isDayDisabled`)](#disabled-days-isdaydisabled)
 - [Visible days (`visibleDays`)](#visible-days-visibledays)
 - [Day cell slots](#day-cell-slots)
+- [Visual theming](#visual-theming)
+- [Extended navigation](#extended-navigation)
+- [Selection modes](#selection-modes)
+- [Week numbers](#week-numbers)
 - [Development](#development)
 - [Roadmap](#roadmap)
 - [License](#license)
@@ -49,7 +53,7 @@ export class App {
 
 | Input             | Type                                                                    | Default       | Description                                                                                |
 | ----------------- | ----------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------ |
-| `value` (model)   | `Date \| null`                                                          | `null`        | Selected day. Two-way bindable with `[(value)]`.                                           |
+| `value` (model)   | `Date \| null \| Date[] \| { start: Date \| null; end: Date \| null }`  | `null`        | Selected day(s). Two-way bindable with `[(value)]`. Type depends on `selectionMode`.       |
 | `firstDayOfWeek`  | `0 \| 1`                                                                | `1`           | `1` = Monday-first, `0` = Sunday-first.                                                    |
 | `locale`          | `string`                                                                | `LOCALE_ID`   | Locale used for titles and weekday labels.                                                 |
 | `showOutsideDays` | `boolean`                                                               | `true`        | Render the 42-cell grid with neighbor-month days.                                          |
@@ -59,16 +63,25 @@ export class App {
 | `dayStyle`        | `Record<string, DayStyle>`                                              | `{}`          | Per-day styles keyed by local ISO date — see [`dayStyle`](#per-day-styling-daystyle).      |
 | `isDayDisabled`   | `(date: Date) => boolean`                                               | `() => false` | Marks dates that refuse UI activation — see [disabled days](#disabled-days-isdaydisabled). |
 | `visibleDays`     | `'all' \| 'mondayToFriday' \| 'mondayToSaturday' \| readonly Weekday[]` | `'all'`       | Projects whole weekday columns — see [visible days](#visible-days-visibledays).            |
+| `fontSize`        | `'sm' \| 'md' \| 'lg'`                                                  | `'md'`        | Text size scale — see [visual theming](#visual-theming).                                   |
+| `density`         | `'compact' \| 'cozy' \| 'spacious'`                                     | `'cozy'`      | Spacing scale (padding, gaps, header height) — see [visual theming](#visual-theming).      |
+| `cornerRadius`    | `'sm' \| 'md' \| 'lg' \| 'full'`                                        | `'md'`        | Border radius scale — see [visual theming](#visual-theming).                               |
+| `minDate`         | `Date \| null`                                                          | `null`        | Minimum selectable date (inclusive) — see [extended navigation](#extended-navigation).     |
+| `maxDate`         | `Date \| null`                                                          | `null`        | Maximum selectable date (inclusive) — see [extended navigation](#extended-navigation).     |
+| `monthSelector`   | `'dropdown' \| 'arrows' \| 'none'`                                      | `'arrows'`    | Month navigation mode — see [extended navigation](#extended-navigation).                   |
+| `selectionMode`   | `'single' \| 'multiple' \| 'range'`                                     | `'single'`    | Selection behavior — see [selection modes](#selection-modes).                              |
+| `weekNumbers`     | `boolean`                                                               | `false`       | Show ISO week number column — see [week numbers](#week-numbers).                           |
 
 | Output        | Type                      | Description                                                                        |
 | ------------- | ------------------------- | ---------------------------------------------------------------------------------- |
 | `monthChange` | `Date`                    | Emits the first day of the visible month on navigation.                            |
 | `dayClick`    | `CalendulumDayClickEvent` | Emits `{ date, x, y }` on day activation — see [day clicks](#day-clicks-dayclick). |
+| `valueChange` | varies by mode            | Emits the updated selection model — see [selection modes](#selection-modes).       |
 
 `CalendulumDayCellContext` is the implicit template context (bound via `let-day`) and exposes
-`{ date: Date, inMonth: boolean, isToday: boolean, isSelected: boolean, isDisabled: boolean }`
-— the flags reflect the current `value`, today, and the `isDayDisabled` predicate at render
-time. The type and this documentation always match field-for-field.
+`{ date: Date, inMonth: boolean, isToday: boolean, isSelected: boolean, isDisabled: boolean, weekNumber: number \| null, isInRange: boolean, isRangeStart: boolean, isRangeEnd: boolean }`
+— the flags reflect the current `value`, today, the `isDayDisabled` predicate, bounds, and the
+`selectionMode` at render time. The type and this documentation always match field-for-field.
 
 ## Theming
 
@@ -254,6 +267,135 @@ same context as `dayCell`:
 
 Slot content never intercepts pointer events — clicks landing on it still activate the day.
 When `dayCell` is provided, it fully replaces the cell and slots do not render.
+
+## Visual theming
+
+Three discrete inputs let you scale the entire component without custom CSS:
+
+| Input          | Type                                | Default  | Effect                                                                                                   |
+| -------------- | ----------------------------------- | -------- | -------------------------------------------------------------------------------------------------------- |
+| `fontSize`     | `'sm' \| 'md' \| 'lg'`              | `'md'`   | Scales all text via `--cld-font-size-multiplier` (0.875 / 1 / 1.125).                                    |
+| `density`      | `'compact' \| 'cozy' \| 'spacious'` | `'cozy'` | Scales spacing (cell padding, grid gap, header height) via `--cld-density-multiplier` (0.75 / 1 / 1.25). |
+| `cornerRadius` | `'sm' \| 'md' \| 'lg' \| 'full'`    | `'md'`   | Overrides `--cld-radius` via `--cld-radius-override` (0.25rem / 0.5rem / 0.75rem / 9999px).              |
+
+All three write their own CSS custom property multiplier (`--cld-font-size-multiplier`,
+`--cld-density-multiplier`, `--cld-radius-override`) which the base stylesheet consumes via
+`calc()`. You can still override the base properties directly (`--cld-radius`, etc.) and the
+inputs will still work as presets.
+
+```html
+<calendulum-month fontSize="lg" density="spacious" cornerRadius="lg" />
+```
+
+The inputs accept only their discrete tiers; invalid values fall back to the default.
+
+## Extended navigation
+
+Two bounds inputs clamp the calendar to an absolute date range, and a month selector
+gives users a faster way to jump months.
+
+### Bounds (`minDate`, `maxDate`)
+
+```ts
+import { Component, signal } from '@angular/core';
+import { CalendulumMonth } from 'calendulum';
+
+@Component({
+  selector: 'app-booking',
+  imports: [CalendulumMonth],
+  template: ` <calendulum-month [minDate]="today()" [maxDate]="maxDate()" [(value)]="checkIn" /> `,
+})
+export class Booking {
+  protected readonly today = signal(new Date());
+  protected readonly maxDate = signal(new Date(2026, 11, 31));
+  protected readonly checkIn = signal<Date | null>(null);
+}
+```
+
+Behavior:
+
+- `minDate` / `maxDate` are **inclusive** calendar bounds (day granularity).
+- On `value` set, the model is clamped to the bounds (out-of-range dates snap to the nearest
+  bound).
+- Navigation buttons (`‹` / `›`) disable when the view month would step past a bound.
+- Cells outside the bounds render as **disabled** (merged with `isDayDisabled` via OR logic).
+- Programmatic `select(date)` and `goToToday()` bypass bounds — they remain unconditional.
+
+### Month selector (`monthSelector`)
+
+```html
+<calendulum-month monthSelector="dropdown" />
+```
+
+Three modes:
+
+| Mode         | Behavior                                                                     |
+| ------------ | ---------------------------------------------------------------------------- |
+| `'arrows'`   | Previous/next buttons (default).                                             |
+| `'dropdown'` | Native `<select>` with month options filtered by `minDate`/`maxDate` bounds. |
+| `'none'`     | Only the month title — no navigation controls.                               |
+
+The dropdown uses a native `<select>` for full accessibility; options are filtered to the
+`minDate`/`maxDate` range. It is styled via the existing CSS custom properties (`--cld-font`,
+`--cld-radius`, `--cld-bg`, etc.) so it inherits your theme automatically.
+
+## Selection modes
+
+The `selectionMode` input controls how `value` behaves and how users select dates.
+
+```html
+<calendulum-month selectionMode="range" [(value)]="range" />
+```
+
+| Mode         | `value` type                                 | Behavior                                                                                |
+| ------------ | -------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `'single'`   | `Date \| null`                               | Click selects one day; clicking the same day clears. **Default — backward compatible.** |
+| `'multiple'` | `Date[]`                                     | Click toggles days in/out of the array.                                                 |
+| `'range'`    | `{ start: Date \| null; end: Date \| null }` | First click sets start, second sets end (auto-reorders if end < start).                 |
+
+The `value` model is a simple union: `Date \| null` (single), `Date[]` (multiple),
+`{ start: Date \| null; end: Date \| null }` (range). The `selectionMode` input is the
+external discriminant — it determines which branch is active and which operations are
+allowed. Default `'single'` accepts `Date \| null` so existing consumers need no migration.
+
+**Range auto-reorder**: if the second click sets an end date before the start, the range
+auto-reorders (start/end swap). Programmatic `select()` and `goToToday()` work in all
+modes (they bypass disabled/bounds guards).
+
+```ts
+// single (default)
+const single = signal<Date | null>(null);
+
+// multiple
+const multiple = signal<Date[]>([]);
+
+// range
+const range = signal<{ start: Date | null; end: Date | null }>({ start: null, end: null });
+```
+
+The `valueChange` output fires with the updated model in the same union shape.
+
+## Week numbers
+
+```html
+<calendulum-month weekNumbers />
+```
+
+When `weekNumbers=true`, an ISO week number column (1–53) is prepended as the first column.
+The grid becomes 8 columns (7 days + week), `--cld-week-columns` adjusts automatically,
+and the header shows a "Wk" label. The week column cells expose `weekNumber` in the
+template context so custom `dayCell`/`dayCellTop`/`dayCellBottom` templates can read it.
+
+```html
+<calendulum-month weekNumbers [dayCellBottom]="weekBottom" />
+<ng-template #weekBottom let-day>
+  @if (day.weekNumber) { <span class="wk">{{ day.weekNumber }}</span> }
+</ng-template>
+```
+
+The week numbers follow ISO 8601 (week 1 = the week containing the first Thursday). They
+work with `visibleDays` and `selectionMode` — the column is always the first column
+regardless of weekday filter.
 
 ## Development
 

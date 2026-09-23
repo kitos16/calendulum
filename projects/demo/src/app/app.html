@@ -6,75 +6,229 @@
     </p>
   </header>
 
+  <section class="demo__controls">
+    <details class="demo__controls-group">
+      <summary>Visual Theme</summary>
+      <div class="demo__control-row">
+        <label
+          >Font Size:
+          <select [value]="fontSize()" (change)="onFontSizeChange($event)">
+            <option value="sm">Small (0.875×)</option>
+            <option value="md">Medium (1×)</option>
+            <option value="lg">Large (1.125×)</option>
+          </select>
+        </label>
+        <label
+          >Density:
+          <select [value]="density()" (change)="onDensityChange($event)">
+            <option value="compact">Compact (0.75×)</option>
+            <option value="cozy">Cozy (1×)</option>
+            <option value="spacious">Spacious (1.375×)</option>
+          </select>
+        </label>
+        <label
+          >Corner Radius:
+          <select [value]="cornerRadius()" (change)="onCornerRadiusChange($event)">
+            <option value="sm">Small (0.25rem)</option>
+            <option value="md">Medium (0.5rem)</option>
+            <option value="lg">Large (0.75rem)</option>
+            <option value="full">Full (9999px)</option>
+          </select>
+        </label>
+      </div>
+      <div class="demo__presets">
+        <button type="button" (click)="setVisualPreset('default')">Default</button>
+        <button type="button" (click)="setVisualPreset('compact')">Compact</button>
+        <button type="button" (click)="setVisualPreset('comfortable')">Comfortable</button>
+      </div>
+    </details>
+
+    <details class="demo__controls-group">
+      <summary>Navigation Bounds</summary>
+      <div class="demo__presets">
+        <button type="button" (click)="setBoundsPreset('none')">None</button>
+        <button type="button" (click)="setBoundsPreset('past')">Past Only</button>
+        <button type="button" (click)="setBoundsPreset('future')">Future Only</button>
+        <button type="button" (click)="setBoundsPreset('month')">Current Month</button>
+      </div>
+      <div class="demo__control-row">
+        <label
+          >Min Date:
+          <input
+            type="date"
+            [value]="minDate() ? minDate()!.toISOString().split('T')[0] : ''"
+            (change)="onMinDateChange($event)"
+        /></label>
+        <label
+          >Max Date:
+          <input
+            type="date"
+            [value]="maxDate() ? maxDate()!.toISOString().split('T')[0] : ''"
+            (change)="onMaxDateChange($event)"
+        /></label>
+      </div>
+    </details>
+
+    <details class="demo__controls-group">
+      <summary>Selection Mode</summary>
+      <div class="demo__control-row">
+        <label
+          >Mode:
+          <select [value]="selectionMode()" (change)="onSelectionModeChange($event)">
+            <option value="single">Single</option>
+            <option value="multiple">Multiple</option>
+            <option value="range">Range</option>
+          </select>
+        </label>
+        <label
+          >Week Numbers:
+          <input
+            type="checkbox"
+            [checked]="weekNumbers()"
+            (change)="weekNumbers.set($event.target.checked)"
+        /></label>
+        <label
+          >Month Selector:
+          <select [value]="monthSelector()" (change)="onMonthSelectorChange($event)">
+            <option value="arrows">Arrows</option>
+            <option value="dropdown">Dropdown</option>
+            <option value="none">None</option>
+          </select>
+        </label>
+      </div>
+    </details>
+
+    <details class="demo__controls-group">
+      <summary>Visible Days</summary>
+      <div class="demo__presets">
+        <button
+          type="button"
+          [class.demo__filter--on]="visibleDays() === 'all'"
+          (click)="visibleDays.set('all')"
+        >
+          All
+        </button>
+        <button
+          type="button"
+          [class.demo__filter--on]="visibleDays() === 'mondayToFriday'"
+          (click)="visibleDays.set('mondayToFriday')"
+        >
+          Mon–Fri
+        </button>
+        <button
+          type="button"
+          [class.demo__filter--on]="visibleDays() === 'mondayToSaturday'"
+          (click)="visibleDays.set('mondayToSaturday')"
+        >
+          Mon–Sat
+        </button>
+      </div>
+    </details>
+  </section>
+
   <section class="demo__grid">
     <article class="demo__card">
-      <h2 class="demo__card-title">Básico</h2>
-      <calendulum-month [(value)]="selected" />
-      <p class="demo__value" role="status">
-        Seleccionado:
-        {{ selected() ? (selected() | date: 'fullDate') : 'ninguno' }}
-      </p>
+      <h2 class="demo__card-title">Live Calendar</h2>
+      <calendulum-month
+        [(value)]="value"
+        [selectionMode]="selectionMode()"
+        [weekNumbers]="weekNumbers()"
+        [monthSelector]="monthSelector()"
+        [minDate]="minDate()"
+        [maxDate]="maxDate()"
+        [fontSize]="fontSize()"
+        [density]="density()"
+        [cornerRadius]="cornerRadius()"
+        [visibleDays]="visibleDays()"
+        [isDayDisabled]="isDayDisabled"
+        [dayStyle]="dayStyles()"
+        (dayClick)="onDayClick($event)"
+      />
+      <p class="demo__value" role="status">Value: {{ valueDisplay() }}</p>
     </article>
 
-    <article class="demo__card demo__card--custom">
-      <h2 class="demo__card-title">Personalizado</h2>
-      <calendulum-month [showOutsideDays]="false" [dayCell]="dayCell" />
+    <article class="demo__card">
+      <h2 class="demo__card-title">Custom Day Cell</h2>
+      <calendulum-month
+        [showOutsideDays]="false"
+        [dayCell]="dayCell"
+        [selectionMode]="selectionMode()"
+        [weekNumbers]="weekNumbers()"
+        [monthSelector]="monthSelector()"
+        [minDate]="minDate()"
+        [maxDate]="maxDate()"
+        [fontSize]="fontSize()"
+        [density]="density()"
+        [cornerRadius]="cornerRadius()"
+        [visibleDays]="visibleDays()"
+        [isDayDisabled]="isDayDisabled"
+        [dayStyle]="dayStyles()"
+      />
       <ng-template #dayCell let-day>
-        <span class="day-cell" [class.day-cell--today]="day.isToday">
+        <span
+          class="day-cell"
+          [class.day-cell--today]="day.isToday"
+          [class.day-cell--selected]="day.isSelected"
+          [class.day-cell--in-range]="day.isInRange"
+          [class.day-cell--range-start]="day.isRangeStart"
+          [class.day-cell--range-end]="day.isRangeEnd"
+          [class.day-cell--disabled]="day.isDisabled"
+        >
           {{ day.date.getDate() }}
         </span>
       </ng-template>
       <p class="demo__value">
-        El contexto expone <code>day.isToday</code> y <code>day.isSelected</code>; la celda
-        personalizada también emite <code>dayClick</code> (clic, Enter y Espacio).
+        Custom cell shows all context flags: <code>isToday</code>, <code>isSelected</code>,
+        <code>isInRange</code>, <code>isRangeStart</code>, <code>isRangeEnd</code>,
+        <code>isDisabled</code>.
       </p>
     </article>
 
     <article class="demo__card">
-      <h2 class="demo__card-title">Clic con coordenadas</h2>
-      <calendulum-month (dayClick)="onDayClick($event)" [(value)]="selected" />
+      <h2 class="demo__card-title">Click Coordinates</h2>
+      <calendulum-month (dayClick)="onDayClick($event)" [(value)]="value" />
       <p class="demo__value" role="status">
         @if (lastClick()) {
-          Último clic: {{ lastClick()!.date | date: 'fullDate' }} en ({{ lastClick()!.x }},
+          Last click: {{ lastClick()!.date | date: 'fullDate' }} at ({{ lastClick()!.x }},
           {{ lastClick()!.y }})
         } @else {
-          Haz clic en un día para ver las coordenadas (viewport).
+          Click a day to see viewport coordinates.
         }
       </p>
     </article>
 
     <article class="demo__card">
-      <h2 class="demo__card-title">Estilos por día</h2>
-      <calendulum-month [dayStyle]="dayStyles()" [(value)]="selected" />
+      <h2 class="demo__card-title">Day Styles</h2>
+      <calendulum-month [dayStyle]="dayStyles()" [(value)]="value" />
       <p class="demo__value">
-        <code>dayStyle</code> keyed por <code>dateKey()</code>: hoy solo con borde (la clase de
-        estado gana en fondo/color); mañana con fondo personalizado.
+        <code>dayStyle</code> keyed by <code>dateKey()</code>: today has border (state class wins
+        for bg/color); tomorrow has custom background.
       </p>
     </article>
 
     <article class="demo__card">
-      <h2 class="demo__card-title">Contenido arriba y abajo</h2>
+      <h2 class="demo__card-title">Slots (Top/Bottom)</h2>
       <calendulum-month
         [dayCellTop]="dayCellTop"
         [dayCellBottom]="dayCellBottom"
-        [(value)]="selected"
+        [(value)]="value"
       />
       <ng-template #dayCellTop let-day>
         <span class="slot-marker" [class.slot-marker--on]="day.date.getDate() === 15">★</span>
       </ng-template>
       <ng-template #dayCellBottom let-day>
         @if (day.isToday) {
-          <span class="slot-dot">hoy</span>
+          <span class="slot-dot">today</span>
         }
       </ng-template>
       <p class="demo__value">
-        Slots superpuestos sobre el número (sin moverlo): la estrella marca el día 15, el texto
-        «hoy» usa <code>day.isToday</code> real.
+        Overlay slots on top/bottom of day number (star marks day 15, "today" uses
+        <code>day.isToday</code>).
       </p>
     </article>
 
     <article class="demo__card">
-      <h2 class="demo__card-title">Días deshabilitados</h2>
+      <h2 class="demo__card-title">Disabled Days</h2>
       <calendulum-month [isDayDisabled]="isDayDisabled" [dayCell]="disabledCell" />
       <ng-template #disabledCell let-day>
         <span class="day-cell" [class.day-cell--disabled]="day.isDisabled">
@@ -82,45 +236,57 @@
         </span>
       </ng-template>
       <p class="demo__value">
-        <code>isDayDisabled</code> como predicado: los fines de semana están deshabilitados.
-        Clic en sábado o domingo no emite <code>dayClick</code> ni selecciona. También podés
-        usar la receta de key-set con un <code>Set</code> de <code>dateKey()</code>; el bloqueo
-        es solo de interfaz — <code>select()</code> sigue siendo incondicional.
+        <code>isDayDisabled</code> predicate: weekends disabled. Clicking Sat/Sun emits nothing.
+        <code>select()</code> remains unconditional (programmatic override).
       </p>
     </article>
 
     <article class="demo__card">
-      <h2 class="demo__card-title">Días visibles</h2>
-      <calendulum-month [visibleDays]="visibleDays()" [(value)]="selected" />
-      <div class="demo__filters">
-        <button
-          type="button"
-          class="demo__filter"
-          [class.demo__filter--on]="visibleDays() === 'all'"
-          (click)="visibleDays.set('all')"
-        >
-          Todas
-        </button>
-        <button
-          type="button"
-          class="demo__filter"
-          [class.demo__filter--on]="visibleDays() === 'mondayToFriday'"
-          (click)="visibleDays.set('mondayToFriday')"
-        >
-          Lun–Vie
-        </button>
-        <button
-          type="button"
-          class="demo__filter"
-          [class.demo__filter--on]="visibleDays() === 'mondayToSaturday'"
-          (click)="visibleDays.set('mondayToSaturday')"
-        >
-          Lun–Sáb
-        </button>
-      </div>
+      <h2 class="demo__card-title">Visible Days</h2>
+      <calendulum-month [visibleDays]="visibleDays()" [(value)]="value" />
       <p class="demo__value">
-        <code>visibleDays</code> proyecta columnas enteras: 7, 5 o 6 columnas; las 6 filas se
-        mantienen estables.
+        <code>visibleDays</code> projects whole columns: 7, 5, or 6 columns; 6 rows stay stable.
+      </p>
+    </article>
+
+    <article class="demo__card">
+      <h2 class="demo__card-title">Range Selection</h2>
+      <calendulum-month
+        [(value)]="value"
+        [selectionMode]="'range'"
+        [weekNumbers]="weekNumbers()"
+        [monthSelector]="monthSelector()"
+        [minDate]="minDate()"
+        [maxDate]="maxDate()"
+        [fontSize]="fontSize()"
+        [density]="density()"
+        [cornerRadius]="cornerRadius()"
+        [visibleDays]="visibleDays()"
+        [dayStyle]="dayStyles()"
+      />
+      <p class="demo__value">
+        Range mode: 1st click = start, 2nd = end (auto-reorder), 3rd = new start.
+        <code>isInRange</code>, <code>isRangeStart</code>, <code>isRangeEnd</code> flags available.
+      </p>
+    </article>
+
+    <article class="demo__card">
+      <h2 class="demo__card-title">Multiple Selection</h2>
+      <calendulum-month
+        [(value)]="value"
+        [selectionMode]="'multiple'"
+        [weekNumbers]="weekNumbers()"
+        [monthSelector]="monthSelector()"
+        [minDate]="minDate()"
+        [maxDate]="maxDate()"
+        [fontSize]="fontSize()"
+        [density]="density()"
+        [cornerRadius]="cornerRadius()"
+        [visibleDays]="visibleDays()"
+        [dayStyle]="dayStyles()"
+      />
+      <p class="demo__value">
+        Multiple mode: click toggles dates in array. Value: {{ valueDisplay() }}
       </p>
     </article>
   </section>

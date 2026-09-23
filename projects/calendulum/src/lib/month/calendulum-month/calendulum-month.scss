@@ -1,100 +1,138 @@
 :host {
-  /**
-   * calendulum theming surface.
-   * Override any of these custom properties on `calendulum-month` (or any
-   * ancestor) to restyle the component without touching its internals.
-   */
-  --cld-accent: #4c6ef5;
-  --cld-accent-contrast: #ffffff;
-  --cld-bg: #ffffff;
-  --cld-bg-hover: #f1f3f5;
-  --cld-border: #dee2e6;
-  --cld-text: #212529;
-  --cld-text-muted: #868e96;
-  --cld-outside-text: #ced4da;
-  --cld-radius: 8px;
-  --cld-font: inherit;
-
+  --a: #4c6ef5;
+  --ac: #fff;
+  --b: #fff;
+  --bh: #f1f3f5;
+  --bd: #dee2e6;
+  --t: #212529;
+  --tm: #868e96;
+  --ot: #ced4da;
+  --r: 8px;
+  --f: inherit;
+  --fz: 1;
+  --dz: 1;
+  --rz: 0.5rem;
   display: block;
-  font-family: var(--cld-font);
-  color: var(--cld-text);
-  background: var(--cld-bg);
-  border: 1px solid var(--cld-border);
-  border-radius: var(--cld-radius);
-  padding: 1rem;
+  font: var(--f);
+  color: var(--t);
+  background: var(--b);
+  border: 1px solid var(--bd);
+  border-radius: var(--rz);
+  padding: calc(1rem * var(--dz));
+  font-size: calc(1rem * var(--fz));
   box-sizing: border-box;
   user-select: none;
 }
-
 .cld-month__header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  gap: calc(0.5rem * var(--dz));
+  margin-bottom: calc(0.75rem * var(--dz));
 }
-
 .cld-month__title {
   flex: 1;
   margin: 0;
-  font-size: 1.125rem;
+  font-size: calc(1.125rem * var(--fz));
   font-weight: 600;
   text-align: center;
 }
-
 .cld-month__nav {
   border: none;
-  background: transparent;
-  color: var(--cld-text-muted);
-  font-size: 1.5rem;
+  background: 0;
+  color: var(--tm);
+  font-size: calc(1.5rem * var(--fz));
   line-height: 1;
-  width: 2rem;
-  height: 2rem;
-  border-radius: var(--cld-radius);
+  width: calc(2rem * var(--dz));
+  height: calc(2rem * var(--dz));
+  border-radius: var(--rz);
   cursor: pointer;
 }
-
-.cld-month__nav:hover {
-  background: var(--cld-bg-hover);
-  color: var(--cld-text);
+.cld-month__nav:hover:not([aria-disabled='true']) {
+  background: var(--bh);
+  color: var(--t);
 }
-
+.cld-month__nav[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .cld-month__today {
-  border: 1px solid var(--cld-border);
-  background: transparent;
-  color: var(--cld-accent);
-  font-size: 0.8125rem;
-  padding: 0.375rem 0.625rem;
-  border-radius: var(--cld-radius);
+  border: 1px solid var(--bd);
+  background: 0;
+  color: var(--a);
+  font-size: calc(0.8125rem * var(--fz));
+  padding: calc(0.375rem * var(--dz)) calc(0.625rem * var(--dz));
+  border-radius: var(--rz);
   cursor: pointer;
 }
-
 .cld-month__today:hover {
-  background: var(--cld-bg-hover);
+  background: var(--bh);
 }
-
+.cld-month__month-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.cld-month__month-select {
+  flex: 1;
+  max-width: 12rem;
+  border: 1px solid var(--bd);
+  background: var(--b);
+  color: var(--t);
+  font: inherit;
+  font-size: calc(0.875rem * var(--fz));
+  padding: calc(0.25rem * var(--dz)) calc(0.5rem * var(--dz));
+  border-radius: var(--rz);
+  cursor: pointer;
+}
+.cld-month__month-select:hover {
+  background: var(--bh);
+}
+.cld-month__month-select:focus {
+  outline: 2px solid var(--a);
+  outline-offset: 2px;
+}
 .cld-month__weekdays {
   display: grid;
   grid-template-columns: repeat(var(--cld-week-columns, 7), 1fr);
-  gap: 0.25rem;
-  margin-bottom: 0.25rem;
+  gap: calc(0.25rem * var(--dz));
+  margin-bottom: calc(0.25rem * var(--dz));
 }
-
 .cld-month__weekday {
   text-align: center;
-  font-size: 0.75rem;
+  font-size: calc(0.75rem * var(--fz));
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--cld-text-muted);
-  padding: 0.375rem 0;
+  color: var(--tm);
+  padding: calc(0.375rem * var(--dz)) 0;
 }
-
+.cld-month__weekday--week-number {
+  writing-mode: vertical-lr;
+  text-orientation: mixed;
+  padding: calc(0.25rem * var(--dz)) 0;
+}
 .cld-month__grid {
   display: grid;
   grid-template-columns: repeat(var(--cld-week-columns, 7), 1fr);
-  gap: 0.25rem;
+  gap: calc(0.25rem * var(--dz));
 }
-
+.cld-month__week-number {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(0.75rem * var(--fz));
+  font-weight: 600;
+  color: var(--tm);
+  writing-mode: vertical-lr;
+  text-orientation: mixed;
+}
 .cld-month__day,
 .cld-month__cell {
   aspect-ratio: 1;
@@ -102,75 +140,68 @@
   align-items: center;
   justify-content: center;
 }
-
 .cld-month__day {
   border: var(--cld-day-border, none);
-  background: var(--cld-day-bg, transparent);
-  border-radius: var(--cld-radius);
-  font-size: 0.875rem;
-  color: var(--cld-day-color, var(--cld-text));
+  background: var(--cld-day-bg, 0);
+  border-radius: var(--rz);
+  font-size: calc(0.875rem * var(--fz));
+  color: var(--cld-day-color, var(--t));
   cursor: pointer;
   position: relative;
   transition:
-    background-color 0.12s ease,
-    color 0.12s ease;
+    background 0.12s,
+    color 0.12s;
 }
-
 .cld-month__day-top,
 .cld-month__day-bottom {
   position: absolute;
-  left: 0;
-  right: 0;
+  inset: 0 0 auto;
   text-align: center;
-  font-size: 0.625rem;
+  font-size: calc(0.625rem * var(--fz));
   line-height: 1;
   pointer-events: none;
 }
-
 .cld-month__day-top {
-  top: 0.125rem;
+  top: calc(0.125rem * var(--dz));
 }
-
 .cld-month__day-bottom {
-  bottom: 0.125rem;
+  bottom: calc(0.125rem * var(--dz));
 }
-
-.cld-month__day:hover {
-  background: var(--cld-bg-hover);
+.cld-month__day:hover:not(.cld-month__day--disabled):not(.cld-month__day--selected) {
+  background: var(--bh);
 }
-
 .cld-month__day--outside {
-  color: var(--cld-outside-text);
+  color: var(--ot);
 }
-
 .cld-month__day--today {
-  box-shadow: inset 0 0 0 1.5px var(--cld-accent);
+  box-shadow: inset 0 0 0 1.5px var(--a);
 }
-
 .cld-month__day--selected {
-  background: var(--cld-accent);
-  color: var(--cld-accent-contrast);
+  background: var(--a);
+  color: var(--ac);
 }
-
+.cld-month__day--in-range {
+  background: color-mix(in srgb, var(--a) 15%, transparent);
+}
+.cld-month__day--range-start {
+  border-radius: var(--rz) 0 0 var(--rz);
+}
+.cld-month__day--range-end {
+  border-radius: 0 var(--rz) var(--rz) 0;
+}
+.cld-month__day--in-range:hover {
+  background: color-mix(in srgb, var(--a) 25%, transparent);
+}
 .cld-month__day--disabled {
-  color: var(--cld-text-muted);
+  color: var(--tm);
   cursor: not-allowed;
 }
-
-/*
- * Hover neutralizer for disabled days. Plain disabled cells lose the hover
- * background; the neutralizer is declared before the selected:hover rule so
- * a disabled+selected cell keeps its accent background on hover (both rules
- * share (0,2,0) specificity — later source wins).
- */
 .cld-month__day--disabled:hover {
-  background: transparent;
+  background: 0;
 }
-
 .cld-month__day--selected:hover {
-  background: var(--cld-accent);
+  background: var(--a);
 }
-
 .cld-month__cell {
-  color: var(--cld-text-muted);
+  color: var(--tm);
 }

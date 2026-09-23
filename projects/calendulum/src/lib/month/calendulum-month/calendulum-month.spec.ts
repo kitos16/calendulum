@@ -3,11 +3,17 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import {
   CalendulumVisibleDays,
+  CalendulumSelectionMode,
+  CalendulumValue,
+  clampDate,
   DayCell,
   buildMonthGrid,
   dateKey,
+  getISOWeek,
+  isInRange,
   isSameDay,
   monthTitle,
+  normalizeValue,
   resolveVisibleWeekdays,
   startOfMonth,
   weekdayLabels,
@@ -15,6 +21,7 @@ import {
 import {
   CalendulumDayClickEvent,
   CalendulumMonth,
+  CalendulumDayCellContext,
   DayStyle,
   resolveCellClasses,
   resolveDayStyle,
@@ -52,10 +59,278 @@ describe('CalendulumMonth', () => {
     expect(today!.textContent!.trim()).toBe(String(new Date().getDate()));
   });
 
+  describe('visual theme inputs', () => {
+    it('fontSize defaults to md with multiplier 1', () => {
+      const host = fixture.nativeElement as HTMLElement;
+      expect(host.style.getPropertyValue('--cld-font-size-multiplier')).toBe('1');
+    });
+
+    it('fontSize=sm sets multiplier 0.875', () => {
+      fixture.componentRef.setInput('fontSize', 'sm');
+      fixture.detectChanges();
+      const host = fixture.nativeElement as HTMLElement;
+      expect(host.style.getPropertyValue('--cld-font-size-multiplier')).toBe('0.875');
+    });
+
+    it('fontSize=lg sets multiplier 1.125', () => {
+      fixture.componentRef.setInput('fontSize', 'lg');
+      fixture.detectChanges();
+      const host = fixture.nativeElement as HTMLElement;
+      expect(host.style.getPropertyValue('--cld-font-size-multiplier')).toBe('1.125');
+    });
+
+    it('fontSize invalid value falls back to md (1)', () => {
+      fixture.componentRef.setInput('fontSize', 'xl' as any);
+      fixture.detectChanges();
+      const host = fixture.nativeElement as HTMLElement;
+      expect(host.style.getPropertyValue('--cld-font-size-multiplier')).toBe('1');
+    });
+
+    it('density defaults to cozy with multiplier 1', () => {
+      const host = fixture.nativeElement as HTMLElement;
+      expect(host.style.getPropertyValue('--cld-density-multiplier')).toBe('1');
+    });
+
+    it('density=compact sets multiplier 0.75', () => {
+      fixture.componentRef.setInput('density', 'compact');
+      fixture.detectChanges();
+      const host = fixture.nativeElement as HTMLElement;
+      expect(host.style.getPropertyValue('--cld-density-multiplier')).toBe('0.75');
+    });
+
+    it('density=spacious sets multiplier 1.375', () => {
+      fixture.componentRef.setInput('density', 'spacious');
+      fixture.detectChanges();
+      const host = fixture.nativeElement as HTMLElement;
+      expect(host.style.getPropertyValue('--cld-density-multiplier')).toBe('1.375');
+    });
+
+    it('density invalid value falls back to cozy (1)', () => {
+      fixture.componentRef.setInput('density', 'tight' as any);
+      fixture.detectChanges();
+      const host = fixture.nativeElement as HTMLElement;
+      expect(host.style.getPropertyValue('--cld-density-multiplier')).toBe('1');
+    });
+
+    it('cornerRadius defaults to md with 0.5rem', () => {
+      const host = fixture.nativeElement as HTMLElement;
+      expect(host.style.getPropertyValue('--cld-radius-override')).toBe('0.5rem');
+    });
+
+    it('cornerRadius=sm sets 0.25rem', () => {
+      fixture.componentRef.setInput('cornerRadius', 'sm');
+      fixture.detectChanges();
+      const host = fixture.nativeElement as HTMLElement;
+      expect(host.style.getPropertyValue('--cld-radius-override')).toBe('0.25rem');
+    });
+
+    it('cornerRadius=lg sets 0.75rem', () => {
+      fixture.componentRef.setInput('cornerRadius', 'lg');
+      fixture.detectChanges();
+      const host = fixture.nativeElement as HTMLElement;
+      expect(host.style.getPropertyValue('--cld-radius-override')).toBe('0.75rem');
+    });
+
+    it('cornerRadius=full sets 9999px', () => {
+      fixture.componentRef.setInput('cornerRadius', 'full');
+      fixture.detectChanges();
+      const host = fixture.nativeElement as HTMLElement;
+      expect(host.style.getPropertyValue('--cld-radius-override')).toBe('9999px');
+    });
+
+    it('cornerRadius invalid value falls back to md (0.5rem)', () => {
+      fixture.componentRef.setInput('cornerRadius', 'xl' as any);
+      fixture.detectChanges();
+      const host = fixture.nativeElement as HTMLElement;
+      expect(host.style.getPropertyValue('--cld-radius-override')).toBe('0.5rem');
+    });
+
+    it('runtime fontSize change updates multiplier immediately', () => {
+      const host = fixture.nativeElement as HTMLElement;
+      expect(host.style.getPropertyValue('--cld-font-size-multiplier')).toBe('1');
+      fixture.componentRef.setInput('fontSize', 'lg');
+      fixture.detectChanges();
+      expect(host.style.getPropertyValue('--cld-font-size-multiplier')).toBe('1.125');
+    });
+
+    it('runtime density change updates multiplier immediately', () => {
+      const host = fixture.nativeElement as HTMLElement;
+      expect(host.style.getPropertyValue('--cld-density-multiplier')).toBe('1');
+      fixture.componentRef.setInput('density', 'compact');
+      fixture.detectChanges();
+      expect(host.style.getPropertyValue('--cld-density-multiplier')).toBe('0.75');
+    });
+
+    it('runtime cornerRadius change updates radius immediately', () => {
+      const host = fixture.nativeElement as HTMLElement;
+      expect(host.style.getPropertyValue('--cld-radius-override')).toBe('0.5rem');
+      fixture.componentRef.setInput('cornerRadius', 'full');
+      fixture.detectChanges();
+      expect(host.style.getPropertyValue('--cld-radius-override')).toBe('9999px');
+    });
+  });
+
+  describe('month selector', () => {
+    it('monthSelector=arrows shows prev/next buttons', () => {
+      fixture.componentRef.setInput('monthSelector', 'arrows');
+      fixture.detectChanges();
+
+      const navButtons = fixture.nativeElement.querySelectorAll('button.cld-month__nav');
+      expect(navButtons.length).toBe(2);
+      const select = fixture.nativeElement.querySelector('select');
+      expect(select).toBeNull();
+    });
+
+    it('monthSelector=dropdown shows native select with month options', () => {
+      fixture.componentRef.setInput('monthSelector', 'dropdown');
+      fixture.detectChanges();
+
+      const navButtons = fixture.nativeElement.querySelectorAll('button.cld-month__nav');
+      expect(navButtons.length).toBe(0);
+      const select = fixture.nativeElement.querySelector('select');
+      expect(select).not.toBeNull();
+      expect(select.tagName.toLowerCase()).toBe('select');
+      expect(select.options.length).toBe(12);
+      expect(select.options[0].text).toContain('January');
+      expect(select.options[11].text).toContain('December');
+    });
+
+    it('monthSelector=dropdown options respect minDate/maxDate bounds', () => {
+      fixture.componentRef.setInput('monthSelector', 'dropdown');
+      fixture.componentRef.setInput('minDate', new Date(2026, 5, 1)); // June
+      fixture.componentRef.setInput('maxDate', new Date(2026, 8, 30)); // September
+      fixture.detectChanges();
+
+      const select = fixture.nativeElement.querySelector('select');
+      expect(select).not.toBeNull();
+      expect(select.options.length).toBe(4); // June, July, August, September
+      expect(select.options[0].text).toContain('June');
+      expect(select.options[3].text).toContain('September');
+    });
+
+    it('monthSelector=none shows only title, no arrows or dropdown', () => {
+      fixture.componentRef.setInput('monthSelector', 'none');
+      fixture.detectChanges();
+
+      const navButtons = fixture.nativeElement.querySelectorAll('button.cld-month__nav');
+      expect(navButtons.length).toBe(0);
+      const select = fixture.nativeElement.querySelector('select');
+      expect(select).toBeNull();
+      const title = fixture.nativeElement.querySelector('.cld-month__title');
+      expect(title).not.toBeNull();
+    });
+
+    it('dropdown selection changes view month and emits monthChange', () => {
+      fixture.componentRef.setInput('monthSelector', 'dropdown');
+      fixture.detectChanges();
+
+      const emitted: Date[] = [];
+      component.monthChange.subscribe((d) => emitted.push(d));
+
+      const select = fixture.nativeElement.querySelector('select') as HTMLSelectElement;
+      select.value = select.options[2].value; // March (0-indexed)
+      select.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+
+      expect(emitted.length).toBe(1);
+      expect(emitted[0].getMonth()).toBe(2); // March
+    });
+
+    it('dropdown has proper label for accessibility', () => {
+      fixture.componentRef.setInput('monthSelector', 'dropdown');
+      fixture.detectChanges();
+
+      const select = fixture.nativeElement.querySelector('select');
+      const label = fixture.nativeElement.querySelector('label');
+      expect(label).not.toBeNull();
+      expect(label.getAttribute('for')).toBe(select.id);
+      expect(label.textContent).toContain('Month');
+    });
+  });
+
+  describe('week numbers', () => {
+    it('weekNumbers=true adds week number column to header', () => {
+      fixture.componentRef.setInput('weekNumbers', true);
+      fixture.detectChanges();
+
+      const headerCells = fixture.nativeElement.querySelectorAll('.cld-month__weekday');
+      expect(headerCells.length).toBe(8); // 7 weekdays + 1 week number
+      expect(headerCells[0].textContent).toContain('Wk');
+    });
+
+    it('weekNumbers=true adds week number column to grid rows', () => {
+      fixture.componentRef.setInput('weekNumbers', true);
+      fixture.detectChanges();
+
+      const weekNumberCells = fixture.nativeElement.querySelectorAll('.cld-month__week-number');
+      expect(weekNumberCells.length).toBe(6); // 6 rows
+    });
+
+    it('weekColumns computed includes week number column', () => {
+      fixture.componentRef.setInput('weekNumbers', true);
+      fixture.detectChanges();
+
+      const section = fixture.nativeElement.querySelector('section.cld-month') as HTMLElement;
+      expect(section.style.getPropertyValue('--cld-week-columns')).toBe('8');
+
+      fixture.componentRef.setInput('visibleDays', 'mondayToFriday');
+      fixture.detectChanges();
+      expect(section.style.getPropertyValue('--cld-week-columns')).toBe('6');
+    });
+
+    it('week number cells show ISO week numbers', () => {
+      fixture.componentRef.setInput('weekNumbers', true);
+      fixture.detectChanges();
+
+      const weekNumbers = component.getWeekNumbers();
+      expect(weekNumbers.length).toBe(6);
+      expect(weekNumbers.every((n) => n >= 1 && n <= 53)).toBe(true);
+    });
+  });
+
+  describe('navigation bounds', () => {
+    it('canGoPrevious=false when view at minDate month', () => {
+      fixture.componentRef.setInput('minDate', new Date(2026, 5, 1)); // June
+      component.view.set(new Date(2026, 5, 1));
+      fixture.detectChanges();
+
+      expect(component.canGoPrevious()).toBe(false);
+    });
+
+    it('canGoNext=false when view at maxDate month', () => {
+      fixture.componentRef.setInput('maxDate', new Date(2026, 8, 30)); // September
+      component.view.set(new Date(2026, 8, 1));
+      fixture.detectChanges();
+
+      expect(component.canGoNext()).toBe(false);
+    });
+
+    it('canGoPrevious/canGoNext=true when view within bounds', () => {
+      fixture.componentRef.setInput('minDate', new Date(2026, 0, 1));
+      fixture.componentRef.setInput('maxDate', new Date(2026, 11, 31));
+      component.view.set(new Date(2026, 5, 1));
+      fixture.detectChanges();
+
+      expect(component.canGoPrevious()).toBe(true);
+      expect(component.canGoNext()).toBe(true);
+    });
+
+    it('navigation buttons show aria-disabled when at bounds', () => {
+      fixture.componentRef.setInput('minDate', new Date(2026, 5, 1));
+      component.view.set(new Date(2026, 5, 1));
+      fixture.detectChanges();
+
+      const prevButton = fixture.nativeElement.querySelector('button.cld-month__nav');
+      expect(prevButton.getAttribute('aria-disabled')).toBe('true');
+    });
+  });
+
   describe('selection', () => {
     it('selects a day, updates the model and emits valueChange', () => {
       const emitted: Date[] = [];
-      component.value.subscribe((d) => emitted.push(d!));
+      component.valueChange.subscribe((d: CalendulumValue) => {
+        if (d instanceof Date) emitted.push(d);
+      });
 
       const today = fixture.nativeElement.querySelector(
         'button.cld-month__day--today',
@@ -63,8 +338,10 @@ describe('CalendulumMonth', () => {
       today!.click();
       fixture.detectChanges();
 
-      expect(component.value()).not.toBeNull();
-      expect(isSameDay(component.value()!, new Date())).toBe(true);
+      const value = component.value();
+      expect(value).not.toBeNull();
+      expect(value instanceof Date).toBe(true);
+      expect(isSameDay(value as Date, new Date())).toBe(true);
       expect(emitted.length).toBe(1);
       expect(isSameDay(emitted[0], new Date())).toBe(true);
 
@@ -116,7 +393,9 @@ describe('CalendulumMonth', () => {
       fixture.detectChanges();
 
       expect(isSameDay(component.view(), startOfMonth(new Date()))).toBe(true);
-      expect(isSameDay(component.value()!, new Date())).toBe(true);
+      const value = component.value();
+      expect(value instanceof Date).toBe(true);
+      expect(isSameDay(value as Date, new Date())).toBe(true);
     });
   });
 
@@ -164,7 +443,9 @@ describe('CalendulumMonth', () => {
       expect(isSameDay(emitted[0].date, new Date())).toBe(true);
       expect(emitted[0].x).toBe(120);
       expect(emitted[0].y).toBe(340);
-      expect(isSameDay(component.value()!, new Date())).toBe(true);
+      const val = component.value();
+      expect(val instanceof Date).toBe(true);
+      expect(isSameDay(val as Date, new Date())).toBe(true);
     });
 
     it('emits distinct coordinates for clicks at different viewport points', () => {
@@ -204,7 +485,9 @@ describe('CalendulumMonth', () => {
 
       expect(emitted.length).toBe(1);
       expect(isSameDay(emitted[0].date, firstOutside)).toBe(true);
-      expect(isSameDay(component.value()!, firstOutside)).toBe(true);
+      const valueAfterClick = component.value();
+      expect(valueAfterClick instanceof Date).toBe(true);
+      expect(isSameDay(valueAfterClick as Date, firstOutside)).toBe(true);
       expect(monthChanges.length).toBe(0);
       expect(isSameDay(component.view(), monthStart)).toBe(true);
     });
@@ -361,7 +644,9 @@ describe('CalendulumMonth', () => {
       fixture.detectChanges();
 
       expect(emitted.length).toBe(1);
-      expect(isSameDay(component.value()!, dayInView(16))).toBe(true);
+      const val1 = component.value();
+      expect(val1 instanceof Date).toBe(true);
+      expect(isSameDay(val1 as Date, dayInView(16))).toBe(true);
     });
 
     it('select() sets value on a disabled date without consulting the predicate', () => {
@@ -371,7 +656,9 @@ describe('CalendulumMonth', () => {
       component.select(dayInView(15));
       fixture.detectChanges();
 
-      expect(isSameDay(component.value()!, dayInView(15))).toBe(true);
+      const val2 = component.value();
+      expect(val2 instanceof Date).toBe(true);
+      expect(isSameDay(val2 as Date, dayInView(15))).toBe(true);
     });
 
     it('goToToday still selects today when today is disabled', () => {
@@ -381,7 +668,9 @@ describe('CalendulumMonth', () => {
       component.goToToday();
       fixture.detectChanges();
 
-      expect(isSameDay(component.value()!, new Date())).toBe(true);
+      const val3 = component.value();
+      expect(val3 instanceof Date).toBe(true);
+      expect(isSameDay(val3 as Date, new Date())).toBe(true);
     });
 
     it('keeps the today visuals on a disabled today cell', () => {
@@ -559,7 +848,9 @@ describe('CalendulumMonth', () => {
       component.value.set(saturday);
       fixture.detectChanges();
 
-      expect(isSameDay(component.value()!, saturday)).toBe(true);
+      const val = component.value();
+      expect(val instanceof Date).toBe(true);
+      expect(isSameDay(val as Date, saturday)).toBe(true);
       expect(fixture.nativeElement.querySelectorAll('button.cld-month__day--selected').length).toBe(
         0,
       );
@@ -936,7 +1227,9 @@ describe('CalendulumMonth with dayCellTop/dayCellBottom slots', () => {
 
     expect(emitted.length).toBe(1);
     expect(isSameDay(emitted[0].date, firstCell)).toBe(true);
-    expect(isSameDay(fixture.componentInstance.month.value()!, firstCell)).toBe(true);
+    const val = fixture.componentInstance.month.value();
+    expect(val instanceof Date).toBe(true);
+    expect(isSameDay(val as Date, firstCell)).toBe(true);
   });
 
   it('keeps dayStyle entries on cells that render slot content', () => {
