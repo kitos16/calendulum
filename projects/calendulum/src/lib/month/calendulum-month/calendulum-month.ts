@@ -253,9 +253,9 @@ export class CalendulumMonth {
   private readonly _themeEffect = effect(() => {
     const host = this.elementRef.nativeElement;
     if (host) {
-      host.style.setProperty('--cld-font-size-multiplier', String(this.fontSizeMultiplier()));
-      host.style.setProperty('--cld-density-multiplier', String(this.densityMultiplier()));
-      host.style.setProperty('--cld-radius-override', this.cornerRadiusValue());
+      host.style.setProperty('--fz', String(this.fontSizeMultiplier()));
+      host.style.setProperty('--dz', String(this.densityMultiplier()));
+      host.style.setProperty('--rz', this.cornerRadiusValue());
     }
   });
 

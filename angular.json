@@ -28,6 +28,10 @@
               {
                 "glob": "**/*",
                 "input": "projects/demo/public"
+              },
+              {
+                "glob": "**/*",
+                "input": "projects/demo/src/assets"
               }
             ],
             "styles": ["projects/demo/src/styles.scss"]
