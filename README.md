@@ -284,8 +284,7 @@ same context as `dayCell`:
 ```
 
 <!-- Screenshots: place in docs/screenshots/ -->
-<!-- ![Day Cell Slots - Top](docs/screenshots/daycell-slots-top.png) -->
-<!-- ![Day Cell Slots - Bottom](docs/screenshots/daycell-slots-bottom.png) -->
+<!-- ![Day Cell Slots](docs/screenshots/daycell-slots.png) -->
 
 Slot content never intercepts pointer events — clicks landing on it still activate the day.
 When `dayCell` is provided, it fully replaces the cell and slots do not render.
