@@ -1,6 +1,6 @@
 # Calendulum
 
-![Calendulum Logo](logo.jpeg)
+![Calendulum Logo](logo.png)
 
 > Derived from _Calendula_, the marigold flower named after the Roman _calendae_ — it blooms every month, like the calendars you build.
 
