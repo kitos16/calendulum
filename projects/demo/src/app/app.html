@@ -207,6 +207,15 @@
     </article>
 
     <article class="demo__card">
+      <h2 class="demo__card-title">Day Style Classes</h2>
+      <calendulum-month [dayStyle]="dayStyles()" [(value)]="value" />
+      <p class="demo__value">
+        <code>dayStyle</code> with <code>class: ['day-cell--highlight', 'pulse']</code> on day +2:
+        extra classes merged with state classes; pulse animation via CSS.
+      </p>
+    </article>
+
+    <article class="demo__card">
       <h2 class="demo__card-title">Slots (Top/Bottom)</h2>
       <calendulum-month
         [dayCellTop]="dayCellTop"

@@ -62,111 +62,111 @@ describe('CalendulumMonth', () => {
   describe('visual theme inputs', () => {
     it('fontSize defaults to md with multiplier 1', () => {
       const host = fixture.nativeElement as HTMLElement;
-      expect(host.style.getPropertyValue('--cld-font-size-multiplier')).toBe('1');
+      expect(host.style.getPropertyValue('--fz')).toBe('1');
     });
 
     it('fontSize=sm sets multiplier 0.875', () => {
       fixture.componentRef.setInput('fontSize', 'sm');
       fixture.detectChanges();
       const host = fixture.nativeElement as HTMLElement;
-      expect(host.style.getPropertyValue('--cld-font-size-multiplier')).toBe('0.875');
+      expect(host.style.getPropertyValue('--fz')).toBe('0.875');
     });
 
     it('fontSize=lg sets multiplier 1.125', () => {
       fixture.componentRef.setInput('fontSize', 'lg');
       fixture.detectChanges();
       const host = fixture.nativeElement as HTMLElement;
-      expect(host.style.getPropertyValue('--cld-font-size-multiplier')).toBe('1.125');
+      expect(host.style.getPropertyValue('--fz')).toBe('1.125');
     });
 
     it('fontSize invalid value falls back to md (1)', () => {
       fixture.componentRef.setInput('fontSize', 'xl' as any);
       fixture.detectChanges();
       const host = fixture.nativeElement as HTMLElement;
-      expect(host.style.getPropertyValue('--cld-font-size-multiplier')).toBe('1');
+      expect(host.style.getPropertyValue('--fz')).toBe('1');
     });
 
     it('density defaults to cozy with multiplier 1', () => {
       const host = fixture.nativeElement as HTMLElement;
-      expect(host.style.getPropertyValue('--cld-density-multiplier')).toBe('1');
+      expect(host.style.getPropertyValue('--dz')).toBe('1');
     });
 
     it('density=compact sets multiplier 0.75', () => {
       fixture.componentRef.setInput('density', 'compact');
       fixture.detectChanges();
       const host = fixture.nativeElement as HTMLElement;
-      expect(host.style.getPropertyValue('--cld-density-multiplier')).toBe('0.75');
+      expect(host.style.getPropertyValue('--dz')).toBe('0.75');
     });
 
     it('density=spacious sets multiplier 1.375', () => {
       fixture.componentRef.setInput('density', 'spacious');
       fixture.detectChanges();
       const host = fixture.nativeElement as HTMLElement;
-      expect(host.style.getPropertyValue('--cld-density-multiplier')).toBe('1.375');
+      expect(host.style.getPropertyValue('--dz')).toBe('1.375');
     });
 
     it('density invalid value falls back to cozy (1)', () => {
       fixture.componentRef.setInput('density', 'tight' as any);
       fixture.detectChanges();
       const host = fixture.nativeElement as HTMLElement;
-      expect(host.style.getPropertyValue('--cld-density-multiplier')).toBe('1');
+      expect(host.style.getPropertyValue('--dz')).toBe('1');
     });
 
     it('cornerRadius defaults to md with 0.5rem', () => {
       const host = fixture.nativeElement as HTMLElement;
-      expect(host.style.getPropertyValue('--cld-radius-override')).toBe('0.5rem');
+      expect(host.style.getPropertyValue('--rz')).toBe('0.5rem');
     });
 
     it('cornerRadius=sm sets 0.25rem', () => {
       fixture.componentRef.setInput('cornerRadius', 'sm');
       fixture.detectChanges();
       const host = fixture.nativeElement as HTMLElement;
-      expect(host.style.getPropertyValue('--cld-radius-override')).toBe('0.25rem');
+      expect(host.style.getPropertyValue('--rz')).toBe('0.25rem');
     });
 
     it('cornerRadius=lg sets 0.75rem', () => {
       fixture.componentRef.setInput('cornerRadius', 'lg');
       fixture.detectChanges();
       const host = fixture.nativeElement as HTMLElement;
-      expect(host.style.getPropertyValue('--cld-radius-override')).toBe('0.75rem');
+      expect(host.style.getPropertyValue('--rz')).toBe('0.75rem');
     });
 
     it('cornerRadius=full sets 9999px', () => {
       fixture.componentRef.setInput('cornerRadius', 'full');
       fixture.detectChanges();
       const host = fixture.nativeElement as HTMLElement;
-      expect(host.style.getPropertyValue('--cld-radius-override')).toBe('9999px');
+      expect(host.style.getPropertyValue('--rz')).toBe('9999px');
     });
 
     it('cornerRadius invalid value falls back to md (0.5rem)', () => {
       fixture.componentRef.setInput('cornerRadius', 'xl' as any);
       fixture.detectChanges();
       const host = fixture.nativeElement as HTMLElement;
-      expect(host.style.getPropertyValue('--cld-radius-override')).toBe('0.5rem');
+      expect(host.style.getPropertyValue('--rz')).toBe('0.5rem');
     });
 
     it('runtime fontSize change updates multiplier immediately', () => {
       const host = fixture.nativeElement as HTMLElement;
-      expect(host.style.getPropertyValue('--cld-font-size-multiplier')).toBe('1');
+      expect(host.style.getPropertyValue('--fz')).toBe('1');
       fixture.componentRef.setInput('fontSize', 'lg');
       fixture.detectChanges();
-      expect(host.style.getPropertyValue('--cld-font-size-multiplier')).toBe('1.125');
+      expect(host.style.getPropertyValue('--fz')).toBe('1.125');
     });
 
     it('runtime density change updates multiplier immediately', () => {
       const host = fixture.nativeElement as HTMLElement;
-      expect(host.style.getPropertyValue('--cld-density-multiplier')).toBe('1');
+      expect(host.style.getPropertyValue('--dz')).toBe('1');
       fixture.componentRef.setInput('density', 'compact');
       fixture.detectChanges();
-      expect(host.style.getPropertyValue('--cld-density-multiplier')).toBe('0.75');
+      expect(host.style.getPropertyValue('--dz')).toBe('0.75');
     });
 
     it('runtime cornerRadius change updates radius immediately', () => {
       const host = fixture.nativeElement as HTMLElement;
-      expect(host.style.getPropertyValue('--cld-radius-override')).toBe('0.5rem');
+      expect(host.style.getPropertyValue('--rz')).toBe('0.5rem');
       fixture.componentRef.setInput('cornerRadius', 'full');
       fixture.detectChanges();
-      expect(host.style.getPropertyValue('--cld-radius-override')).toBe('9999px');
+      expect(host.style.getPropertyValue('--rz')).toBe('9999px');
     });
   });
 

@@ -167,8 +167,10 @@ export class App {
 function buildDayStyles(): Record<string, DayStyle> {
   const today = new Date();
   const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+  const dayAfterTomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2);
   return {
     [dateKey(today)]: { border: '2px solid var(--cld-accent)' },
     [dateKey(tomorrow)]: { background: 'oklch(92% 0.09 75)', color: 'oklch(35% 0.12 65)' },
+    [dateKey(dayAfterTomorrow)]: { class: ['day-cell--highlight', 'pulse'] },
   };
 }
