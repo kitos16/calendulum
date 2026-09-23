@@ -166,6 +166,7 @@
 }
 .cld-month__day-bottom {
   bottom: calc(0.125rem * var(--dz));
+  top: auto;
 }
 .cld-month__day:hover:not(.cld-month__day--disabled):not(.cld-month__day--selected) {
   background: var(--bh);
