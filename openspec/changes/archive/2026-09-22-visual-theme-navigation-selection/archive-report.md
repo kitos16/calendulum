@@ -9,19 +9,20 @@
 
 ## Specs Synced
 
-| Domain | Action | Details |
-|--------|--------|---------|
-| context-contract | MODIFIED | Appended ADDED requirements: weekNumber, isInRange, isRangeStart, isRangeEnd context flags (7 scenarios) + README documentation requirement (1 scenario). Preserved all 3 original requirements and scenarios. |
-| disabled-days | MODIFIED | Replaced 7 requirements with updated versions adding minDate/maxDate bounds merge logic. Added 15 new scenarios covering bounds-disabled cells, OR logic with predicate, inclusive bounds, bounds-disabled activation blocking, aria-disabled, disabled class, context flag, unconditional select(), README bounds merge docs. Preserved all original scenarios. |
-| selection-modes | CREATED | New main spec: 9 requirements, 33 scenarios covering single/multiple/range selection modes, discriminated union value type, weekNumbers ISO column, bounds integration, backward compatibility. |
-| font-size | CREATED | New main spec: 3 requirements, 9 scenarios covering discrete tiers (sm/md/lg), CSS var multiplier (0.875/1/1.125), uniform text scaling, runtime updates. |
-| density | CREATED | New main spec: 3 requirements, 9 scenarios covering discrete tiers (compact/cozy/spacious), CSS var multiplier (0.75/1/1.375), cell padding/gap/header height scaling via calc(), runtime updates. |
-| corner-radius | CREATED | New main spec: 3 requirements, 9 scenarios covering discrete tiers (sm/md/lg/full), CSS var override (0.25rem/0.5rem/0.75rem/9999px), applies to day cells/header/dropdown, runtime updates. |
-| extended-navigation | CREATED | New main spec: 5 requirements, 23 scenarios covering minDate/maxDate bounds (clamping, nav button disable, cell disable), monthSelector dropdown/arrows/none, dropdown bounds filtering, native select accessibility. |
+| Domain              | Action   | Details                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| context-contract    | MODIFIED | Appended ADDED requirements: weekNumber, isInRange, isRangeStart, isRangeEnd context flags (7 scenarios) + README documentation requirement (1 scenario). Preserved all 3 original requirements and scenarios.                                                                                                                                                   |
+| disabled-days       | MODIFIED | Replaced 7 requirements with updated versions adding minDate/maxDate bounds merge logic. Added 15 new scenarios covering bounds-disabled cells, OR logic with predicate, inclusive bounds, bounds-disabled activation blocking, aria-disabled, disabled class, context flag, unconditional select(), README bounds merge docs. Preserved all original scenarios. |
+| selection-modes     | CREATED  | New main spec: 9 requirements, 33 scenarios covering single/multiple/range selection modes, discriminated union value type, weekNumbers ISO column, bounds integration, backward compatibility.                                                                                                                                                                  |
+| font-size           | CREATED  | New main spec: 3 requirements, 9 scenarios covering discrete tiers (sm/md/lg), CSS var multiplier (0.875/1/1.125), uniform text scaling, runtime updates.                                                                                                                                                                                                        |
+| density             | CREATED  | New main spec: 3 requirements, 9 scenarios covering discrete tiers (compact/cozy/spacious), CSS var multiplier (0.75/1/1.375), cell padding/gap/header height scaling via calc(), runtime updates.                                                                                                                                                               |
+| corner-radius       | CREATED  | New main spec: 3 requirements, 9 scenarios covering discrete tiers (sm/md/lg/full), CSS var override (0.25rem/0.5rem/0.75rem/9999px), applies to day cells/header/dropdown, runtime updates.                                                                                                                                                                     |
+| extended-navigation | CREATED  | New main spec: 5 requirements, 23 scenarios covering minDate/maxDate bounds (clamping, nav button disable, cell disable), monthSelector dropdown/arrows/none, dropdown bounds filtering, native select accessibility.                                                                                                                                            |
 
 ## Archive Contents
 
 All artifacts preserved in archive:
+
 - ✅ proposal.md
 - ✅ exploration.md
 - ✅ design.md
@@ -33,6 +34,7 @@ All artifacts preserved in archive:
 ## Source of Truth Updated
 
 The following main specs now reflect the new behavior:
+
 - `openspec/specs/context-contract/spec.md` — extended template context contract
 - `openspec/specs/disabled-days/spec.md` — bounds merge into disabled logic
 - `openspec/specs/selection-modes/spec.md` — new selection modes with week numbers
